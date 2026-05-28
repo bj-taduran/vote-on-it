@@ -36,6 +36,9 @@ resource "aws_kms_alias" "main" {
 }
 
 data "aws_iam_policy_document" "kms_key_policy" {
+  #checkov:skip=CKV_AWS_109:Root account kms:* with resources=* is the AWS-recommended pattern to prevent CMK lockout. This is a KMS key policy, not a general IAM policy — resources=* means "this key only".
+  #checkov:skip=CKV_AWS_111:Service principals (CloudWatch Logs, Secrets Manager, Lambda) need kms:Encrypt/GenerateDataKey to function. These are the minimum required write actions; no broader write access is granted.
+  #checkov:skip=CKV_AWS_356:In KMS key policies, resources=* is scoped to the key itself by the KMS service — it does not grant access to other KMS keys. This is required syntax for KMS key policies.
   # Root delegation — allows IAM policies in this account to grant key usage.
   # Without this, ALL grants must live in this key policy.
   statement {

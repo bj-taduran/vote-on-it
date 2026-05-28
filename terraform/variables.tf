@@ -89,3 +89,9 @@ variable "acm_certificate_arn" {
   type        = string
   default     = null
 }
+
+variable "lambda_reserved_concurrency" {
+  description = "Reserved concurrent executions for the Lambda function. Limits blast radius from traffic spikes; should be set above the API Gateway throttling burst limit (default 50). Use -1 for unreserved (draws from account pool)."
+  type        = number
+  default     = 100
+}

@@ -43,18 +43,18 @@ resource "aws_apigatewayv2_integration" "lambda" {
 # Routes — only the two required endpoints are exposed.
 # ---------------------------------------------------------------------------
 resource "aws_apigatewayv2_route" "post_vote" {
-  api_id    = aws_apigatewayv2_api.vote.id
-  route_key = "POST /vote"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-  # Explicit NONE: this is a public endpoint — no Cognito/JWT/IAM auth required (CKV_AWS_309).
+  #checkov:skip=CKV_AWS_309:This is a public polling endpoint — authorization is intentionally absent. Input validation and dedup are enforced inside the Lambda handler.
+  api_id             = aws_apigatewayv2_api.vote.id
+  route_key          = "POST /vote"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
   authorization_type = "NONE"
 }
 
 resource "aws_apigatewayv2_route" "get_results" {
-  api_id    = aws_apigatewayv2_api.vote.id
-  route_key = "GET /results"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-  # Explicit NONE: GET /results is intentionally public (CKV_AWS_309).
+  #checkov:skip=CKV_AWS_309:GET /results is intentionally public — live vote percentages are not sensitive data.
+  api_id             = aws_apigatewayv2_api.vote.id
+  route_key          = "GET /results"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
   authorization_type = "NONE"
 }
 
