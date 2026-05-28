@@ -83,3 +83,9 @@ variable "log_retention_days" {
   type        = number
   default     = 365
 }
+
+variable "acm_certificate_arn" {
+  description = "ARN of an ACM certificate in us-east-1 for CloudFront HTTPS on a custom domain. Leave null for dev/staging (CloudFront default certificate is used — TLS 1.2+ enforced by AWS). Required for production to enable TLSv1.2_2021 minimum_protocol_version."
+  type        = string
+  default     = null
+}

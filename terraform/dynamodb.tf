@@ -24,9 +24,11 @@ resource "aws_dynamodb_table" "poll_results" {
     type = "S"
   }
 
-  # GDPR / SOC2: Encryption at rest — mandatory.
+  # GDPR / SOC2: Encryption at rest with customer-managed CMK (CKV_AWS_119).
+  # CMK usage is auditable via CloudTrail; key revocation = cryptographic erasure.
   server_side_encryption {
-    enabled = true
+    enabled     = true
+    kms_key_arn = aws_kms_key.main.arn
   }
 
   # SOC2: Point-in-time recovery for data durability and recovery objectives.
@@ -78,7 +80,8 @@ resource "aws_dynamodb_table" "voter_log" {
   }
 
   server_side_encryption {
-    enabled = true
+    enabled     = true
+    kms_key_arn = aws_kms_key.main.arn
   }
 
   point_in_time_recovery {
@@ -124,7 +127,8 @@ resource "aws_dynamodb_table" "audit_log" {
   }
 
   server_side_encryption {
-    enabled = true
+    enabled     = true
+    kms_key_arn = aws_kms_key.main.arn
   }
 
   # SOC2: PITR on the audit log ensures it cannot be silently wiped.

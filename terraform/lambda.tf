@@ -17,10 +17,45 @@ resource "aws_cloudwatch_log_group" "lambda" {
   name              = "/aws/lambda/${var.project_name}-${var.environment}-vote"
   retention_in_days = var.log_retention_days
 
+  # SOC2: CMK encrypts audit log data at rest (CKV_AWS_158).
+  kms_key_id = aws_kms_key.main.arn
+
   tags = {
     Name        = "${var.project_name}-${var.environment}-lambda-logs"
     DataClass   = "Audit"
     Compliance  = "SOC2"
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Lambda code signing — validates the deployment package before execution.
+# Signing profile: AWS Signer using ECDSA-SHA384 (Lambda's required algorithm).
+# ---------------------------------------------------------------------------
+resource "aws_signer_signing_profile" "lambda" {
+  platform_id = "AWSLambda-SHA384-ECDSA"
+  name_prefix = "${replace(var.project_name, "-", "")}${var.environment}"
+
+  signature_validity_period {
+    value = 5
+    type  = "YEARS"
+  }
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-signing-profile"
+  }
+}
+
+resource "aws_lambda_code_signing_config" "vote" {
+  description = "Code signing for ${var.project_name}-${var.environment} Lambda."
+
+  allowed_publishers {
+    signing_profile_version_arns = [aws_signer_signing_profile.lambda.version_arn]
+  }
+
+  # "Warn" allows deployment of unsigned packages while flagging them.
+  # Change to "Enforce" after CI/CD pipeline is wired to sign artifacts.
+  policies {
+    untrusted_artifact_on_deployment = "Warn"
   }
 }
 
@@ -45,6 +80,17 @@ resource "aws_lambda_function" "vote" {
   role    = aws_iam_role.lambda_exec.arn
   timeout = var.lambda_timeout_seconds
   memory_size = var.lambda_memory_mb
+
+  # SOC2: KMS CMK encrypts environment variables at rest (CKV_AWS_173).
+  kms_key_arn = aws_kms_key.main.arn
+
+  # SOC2: Active tracing provides distributed traces for audit and debugging (CKV_AWS_50).
+  tracing_config {
+    mode = "Active"
+  }
+
+  # Supply chain: validates the deployment package is signed before execution (CKV_AWS_272).
+  code_signing_config_arn = aws_lambda_code_signing_config.vote.arn
 
   # ---------------------------------------------------------------------------
   # Environment variables: NON-SENSITIVE configuration only.

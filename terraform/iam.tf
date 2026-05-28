@@ -161,6 +161,56 @@ resource "aws_iam_role_policy" "lambda_secrets" {
 }
 
 # ---------------------------------------------------------------------------
+# Policy: KMS — allow Lambda to use the CMK for DynamoDB and Secrets Manager.
+# DynamoDB transparently calls KMS when reading/writing CMK-encrypted items;
+# the calling principal (Lambda role) must have these permissions.
+# Same applies when Secrets Manager returns a CMK-encrypted secret value.
+# ---------------------------------------------------------------------------
+data "aws_iam_policy_document" "lambda_kms" {
+  statement {
+    sid    = "AllowCMKForDynamoDBAndSecretsManager"
+    effect = "Allow"
+    actions = [
+      "kms:GenerateDataKey",
+      "kms:Decrypt",
+      "kms:DescribeKey",
+    ]
+    resources = [aws_kms_key.main.arn]
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_kms" {
+  name   = "kms-cmk-access"
+  role   = aws_iam_role.lambda_exec.id
+  policy = data.aws_iam_policy_document.lambda_kms.json
+}
+
+# ---------------------------------------------------------------------------
+# Policy: X-Ray — active tracing for SOC2 auditability (CKV_AWS_50).
+# xray:PutTraceSegments and xray:PutTelemetryRecords do not support resource-
+# level constraints in AWS IAM — "*" is the only valid resource value for
+# these actions. This is an AWS service limitation, not a policy choice.
+# ---------------------------------------------------------------------------
+data "aws_iam_policy_document" "lambda_xray" {
+  statement {
+    sid    = "AllowXRayTracing"
+    effect = "Allow"
+    actions = [
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords",
+    ]
+    # AWS does not support resource-level restrictions for X-Ray trace actions.
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_xray" {
+  name   = "xray-tracing"
+  role   = aws_iam_role.lambda_exec.id
+  policy = data.aws_iam_policy_document.lambda_xray.json
+}
+
+# ---------------------------------------------------------------------------
 # Data source: current AWS account ID (used in ARN construction above).
 # ---------------------------------------------------------------------------
 data "aws_caller_identity" "current" {}

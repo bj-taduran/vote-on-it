@@ -43,15 +43,19 @@ resource "aws_apigatewayv2_integration" "lambda" {
 # Routes — only the two required endpoints are exposed.
 # ---------------------------------------------------------------------------
 resource "aws_apigatewayv2_route" "post_vote" {
-  api_id    = aws_apigatewayv2_api.vote.id
-  route_key = "POST /vote"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  api_id             = aws_apigatewayv2_api.vote.id
+  route_key          = "POST /vote"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  # Explicit NONE: this is a public endpoint — no Cognito/JWT/IAM auth required (CKV_AWS_309).
+  authorization_type = "NONE"
 }
 
 resource "aws_apigatewayv2_route" "get_results" {
-  api_id    = aws_apigatewayv2_api.vote.id
-  route_key = "GET /results"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  api_id             = aws_apigatewayv2_api.vote.id
+  route_key          = "GET /results"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  # Explicit NONE: GET /results is intentionally public (CKV_AWS_309).
+  authorization_type = "NONE"
 }
 
 # ---------------------------------------------------------------------------
@@ -101,6 +105,9 @@ resource "aws_apigatewayv2_stage" "default" {
 resource "aws_cloudwatch_log_group" "api_gateway" {
   name              = "/aws/apigateway/${var.project_name}-${var.environment}"
   retention_in_days = var.log_retention_days
+
+  # SOC2: CMK encrypts API access logs at rest (CKV_AWS_158).
+  kms_key_id = aws_kms_key.main.arn
 
   tags = {
     Name       = "${var.project_name}-${var.environment}-api-logs"

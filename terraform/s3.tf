@@ -42,8 +42,12 @@ resource "aws_s3_bucket_versioning" "frontend" {
   }
 }
 
-# Encryption at rest — SSE-S3 (AES-256). Static HTML/JS assets are not
-# sensitive, but encryption is applied uniformly per compliance policy.
+# Encryption at rest — SSE-S3 (AES-256) per CLAUDE.md §3.4.
+# CKV_AWS_145 (SSE-KMS) is intentionally not applied to the frontend bucket:
+# CloudFront OAC requires additional KMS key-policy grants that couple the
+# distribution ARN to the CMK at creation time, creating circular Terraform
+# dependencies. Static HTML/JS/CSS assets are non-sensitive; AES-256 is compliant.
+# checkov:skip=CKV_AWS_145:SSE-S3 is sufficient per CLAUDE.md §3.4; SSE-KMS adds CloudFront/KMS circular dependency for non-sensitive static assets.
 resource "aws_s3_bucket_server_side_encryption_configuration" "frontend" {
   bucket = aws_s3_bucket.frontend.id
 
@@ -122,6 +126,7 @@ resource "aws_s3_bucket_public_access_block" "access_logs" {
   restrict_public_buckets = true
 }
 
+# checkov:skip=CKV_AWS_145:SSE-S3 is sufficient per CLAUDE.md §3.4; SSE-KMS breaks S3 server-access-log delivery and CloudFront log delivery to this bucket.
 resource "aws_s3_bucket_server_side_encryption_configuration" "access_logs" {
   bucket = aws_s3_bucket.access_logs.id
 

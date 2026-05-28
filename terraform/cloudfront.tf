@@ -91,6 +91,9 @@ resource "aws_cloudfront_distribution" "frontend" {
   default_root_object = "index.html"
   price_class         = "PriceClass_100" # US + EU edge locations only (GDPR data-residency hint).
 
+  # SOC2: WAF blocks OWASP Top 10, Log4j, and known-bad IPs (CKV_AWS_68, CKV2_AWS_47).
+  web_acl_id = aws_wafv2_web_acl.cloudfront.arn
+
   # S3 origin via OAC.
   origin {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
@@ -121,11 +124,17 @@ resource "aws_cloudfront_distribution" "frontend" {
     error_caching_min_ttl = 0
   }
 
-  # TLS restrictions — TLS 1.2 minimum, no SSLv3/TLS1.0/1.1.
+  # TLS configuration (CKV_AWS_174).
+  # - Dev/staging: CloudFront default certificate. AWS enforces TLS 1.2+ on the
+  #   default cert; minimum_protocol_version and ssl_support_method are only
+  #   configurable when using a custom ACM certificate.
+  # - Production: set var.acm_certificate_arn to an ACM cert in us-east-1.
+  #   This enables TLSv1.2_2021 (disables TLS 1.0/1.1) and SNI-only mode.
   viewer_certificate {
-    cloudfront_default_certificate = true  # Replace with ACM cert for custom domain.
-    minimum_protocol_version       = "TLSv1.2_2021"
-    ssl_support_method             = "sni-only"
+    cloudfront_default_certificate = var.acm_certificate_arn == null ? true : null
+    acm_certificate_arn            = var.acm_certificate_arn
+    minimum_protocol_version       = var.acm_certificate_arn != null ? "TLSv1.2_2021" : null
+    ssl_support_method             = var.acm_certificate_arn != null ? "sni-only" : null
   }
 
   # Geo-restriction: none by default. Add GDPR-required country blocks if needed.

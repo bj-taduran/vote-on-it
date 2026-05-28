@@ -19,6 +19,10 @@ resource "aws_secretsmanager_secret" "hmac_salt" {
   name        = "${var.project_name}/${var.environment}/hmac-salt"
   description = "HMAC-SHA256 salt used to pseudonymise voter IP addresses. Never expose this value."
 
+  # GDPR / SOC2: CMK encryption — auditable via CloudTrail (CKV_AWS_149).
+  # Revoking this key cryptographically erases all voter pseudonyms.
+  kms_key_id = aws_kms_key.main.arn
+
   # SOC2: Recovery window prevents accidental instant deletion.
   recovery_window_in_days = 7
 
