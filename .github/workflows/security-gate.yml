@@ -1,0 +1,208 @@
+name: Security Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+
+# Minimum permissions: checkout + SARIF upload to the Security tab
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+
+  # ── 1. SAST ────────────────────────────────────────────────────────────────
+  sast-gosec:
+    name: SAST — gosec
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+          cache-dependency-path: lambda/go.sum
+
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@v2.21.4
+
+      # Fails the step (exit 1) on any HIGH or CRITICAL finding.
+      # LOW / MEDIUM findings are reported in the SARIF but do not break the build.
+      - name: Run gosec
+        working-directory: lambda
+        run: gosec -severity high -fmt sarif -out gosec-results.sarif ./...
+
+      # Always upload so reviewers can see findings even when the job failed.
+      - name: Upload gosec SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: lambda/gosec-results.sarif
+          category: gosec
+
+  # ── 2. SCA ─────────────────────────────────────────────────────────────────
+  sca-govulncheck:
+    name: SCA — govulncheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+          cache-dependency-path: lambda/go.sum
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.1.3
+
+      # Capture JSON output regardless of exit code; severity is evaluated below.
+      - name: Run govulncheck
+        working-directory: lambda
+        run: govulncheck -json ./... > govuln-output.json 2>&1 || true
+
+      # govulncheck has no native severity filter, so we parse its OSV records:
+      #   1. Prefer database_specific.severity (text label from Go advisory DB).
+      #   2. Fall back to CVSS v3 base score computed from the vector string
+      #      (requires the `cvss` package; score >= 7.0 = HIGH, >= 9.0 = CRITICAL).
+      # Only HIGH / CRITICAL findings fail the build.
+      - name: Check for HIGH / CRITICAL vulnerabilities
+        run: |
+          pip install cvss --quiet
+          python3 << 'PYEOF'
+          import json, sys
+          try:
+              from cvss import CVSS3
+              HAS_CVSS = True
+          except ImportError:
+              HAS_CVSS = False
+
+          FAIL_SEVERITIES = {"HIGH", "CRITICAL"}
+          failures = []
+
+          with open("lambda/govuln-output.json") as f:
+              for line in f:
+                  line = line.strip()
+                  if not line:
+                      continue
+                  try:
+                      msg = json.loads(line)
+                  except ValueError:
+                      continue
+                  osv = msg.get("osv")
+                  if not osv:
+                      continue
+                  vuln_id = osv.get("id", "unknown")
+                  summary = osv.get("summary", "no summary")
+                  sev = None
+
+                  db_sev = osv.get("database_specific", {}).get("severity", "").upper()
+                  if db_sev in FAIL_SEVERITIES:
+                      sev = db_sev
+
+                  if not sev and HAS_CVSS:
+                      for s in osv.get("severity", []):
+                          if s.get("type", "").startswith("CVSS_V3"):
+                              try:
+                                  score = float(CVSS3(s["score"]).base_score)
+                                  if score >= 9.0:
+                                      sev = "CRITICAL"
+                                  elif score >= 7.0:
+                                      sev = "HIGH"
+                              except Exception:
+                                  pass
+
+                  if sev:
+                      failures.append(f"{vuln_id} [{sev}]: {summary}")
+                      print(f"::error::{vuln_id} [{sev}]: {summary}")
+
+          if failures:
+              print(f"\nFailed: {len(failures)} HIGH/CRITICAL vulnerability(ies) detected.")
+              sys.exit(1)
+          print("govulncheck: no HIGH/CRITICAL vulnerabilities found.")
+          PYEOF
+
+  # ── 3. IaC ─────────────────────────────────────────────────────────────────
+  iac-checkov:
+    name: IaC — checkov
+    runs-on: ubuntu-latest
+    env:
+      TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform.d/plugin-cache
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.10.5'
+
+      - name: Cache Terraform plugins
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: ${{ runner.os }}-terraform-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: ${{ runner.os }}-terraform-
+
+      - name: Create Terraform plugin cache dir
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+      - name: Terraform format check
+        working-directory: terraform
+        run: terraform fmt -check -recursive
+
+      - name: Terraform validate
+        working-directory: terraform
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Install checkov
+        run: pip install checkov==3.2.351
+
+      # --soft-fail-on LOW,MEDIUM,INFO  →  those severities are reported but do NOT
+      # produce a non-zero exit code, so only HIGH / CRITICAL break the build.
+      # Both cli (log output) and sarif (Security tab) are emitted in one pass.
+      - name: Run checkov
+        run: |
+          checkov \
+            --directory terraform \
+            --framework terraform \
+            --soft-fail-on LOW,MEDIUM,INFO \
+            --output cli \
+            --output sarif \
+            --output-file-path checkov-results
+
+      - name: Upload checkov SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-results/results_sarif.sarif
+          category: checkov
+
+  # ── 4. Secrets ─────────────────────────────────────────────────────────────
+  secrets-trufflehog:
+    name: Secrets — TruffleHog
+    runs-on: ubuntu-latest
+    steps:
+      # Full history is required so TruffleHog can walk the commit range of the PR.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Scans only the commits introduced by this PR (base→head).
+      # --only-verified suppresses unverifiable detector matches to reduce noise.
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@v3.88.1
+        with:
+          path: ./
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
+          extra_args: --only-verified
