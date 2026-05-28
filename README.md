@@ -235,8 +235,8 @@ This project is designed to meet SOC2 Type II and GDPR requirements. Every const
 |---|---|
 | **Auditability** | Every state change (`VOTE_CAST`, `DUPLICATE_VOTE_REJECTED`, `RESULTS_READ`) writes a structured record to the `AuditLog` DynamoDB table with `EventID` (UUID v4), `Timestamp` (ISO-8601), `ActorID`, `Action`, `ResourceID`, and `Outcome`. |
 | **Audit log immutability** | The Lambda IAM role has `dynamodb:PutItem` only on `AuditLog` — `UpdateItem` and `DeleteItem` are explicitly excluded. Point-in-time recovery (PITR) is enabled. |
-| **Log retention** | All CloudWatch log groups are set to 365-day retention (`var.log_retention_days`). The access-logs S3 bucket transitions to Glacier after 90 days and expires at the retention boundary. |
-| **Log encryption** | All CloudWatch log groups (Lambda, API Gateway, WAF) are encrypted with the project KMS CMK. |
+| **Log retention** | All CloudWatch log groups are set to 365-day retention (`var.log_retention_days`). The access-logs S3 bucket transitions to Glacier after 90 days, expires at the retention boundary, and aborts incomplete multipart uploads after 7 days. |
+| **Log encryption** | Lambda and API Gateway CloudWatch log groups are encrypted with the project KMS CMK. The WAF log group is in us-east-1 (WAFv2 CloudFront scope requirement); the project CMK is eu-* regional — encrypting it would require a separate us-east-1 CMK with its own lifecycle, which is disproportionate for WAF access logs. |
 | **Encryption at rest** | All three DynamoDB tables use a customer-managed KMS CMK (`kms.tf`). Lambda environment variables are encrypted with the same CMK. Secrets Manager HMAC salt secret uses the CMK. Both S3 buckets use SSE-S3 (AES-256). |
 | **Key management** | Annual CMK key rotation is enabled. Key usage is auditable via CloudTrail. Key revocation constitutes cryptographic erasure. |
 | **IAM least privilege** | The Lambda execution role has 7 separate inline policies, each scoped to exact resource ARNs: CloudWatch Logs (its own log group only), DynamoDB per-table, Secrets Manager (exact secret ARN), KMS (exact CMK ARN), X-Ray. No `*` resource ARNs on any policy. |
@@ -338,7 +338,7 @@ All AWS infrastructure is defined in `terraform/`. The table below summarises ea
 - **ARM64 / Graviton2** Lambda runtime (`provided.al2023`) — cheaper and faster for Go
 - **Single Lambda binary** handles both routes (`POST /vote`, `GET /results`) — minimises cold-start surface
 - **GDPR region validation** in `variables.tf` — only `eu-*` regions are accepted at plan time
-- **SOC2 log retention** — 365-day retention on all CloudWatch log groups; Glacier transition at 90 days for S3 audit logs
+- **SOC2 log retention** — 365-day retention on all CloudWatch log groups; S3 audit logs transition to Glacier after 90 days, expire at the retention boundary, and incomplete multipart uploads are aborted after 7 days
 
 ---
 
