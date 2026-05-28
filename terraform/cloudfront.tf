@@ -68,7 +68,7 @@ resource "aws_cloudfront_response_headers_policy" "security_headers" {
     content_security_policy {
       content_security_policy = join("; ", [
         "default-src 'self'",
-        "script-src 'self' https://cdn.jsdelivr.net",  # Chart.js CDN
+        "script-src 'self' https://cdn.jsdelivr.net", # Chart.js CDN
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data:",
         "connect-src 'self' https://*.execute-api.${var.aws_region}.amazonaws.com",

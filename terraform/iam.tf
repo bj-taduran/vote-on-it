@@ -104,8 +104,8 @@ data "aws_iam_policy_document" "lambda_dynamo_voter" {
     sid    = "AllowVoterLogDedup"
     effect = "Allow"
     actions = [
-      "dynamodb:GetItem",  # Check: has this hash already voted?
-      "dynamodb:PutItem",  # Write: record the hash after a successful vote.
+      "dynamodb:GetItem", # Check: has this hash already voted?
+      "dynamodb:PutItem", # Write: record the hash after a successful vote.
     ]
     resources = [aws_dynamodb_table.voter_log.arn]
   }

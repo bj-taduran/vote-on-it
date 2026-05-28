@@ -21,9 +21,9 @@ resource "aws_cloudwatch_log_group" "lambda" {
   kms_key_id = aws_kms_key.main.arn
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-lambda-logs"
-    DataClass   = "Audit"
-    Compliance  = "SOC2"
+    Name       = "${var.project_name}-${var.environment}-lambda-logs"
+    DataClass  = "Audit"
+    Compliance = "SOC2"
   }
 }
 
@@ -77,8 +77,8 @@ resource "aws_lambda_function" "vote" {
   filename         = "../lambda/dist/function.zip"
   source_code_hash = filebase64sha256("../lambda/dist/function.zip")
 
-  role    = aws_iam_role.lambda_exec.arn
-  timeout = var.lambda_timeout_seconds
+  role        = aws_iam_role.lambda_exec.arn
+  timeout     = var.lambda_timeout_seconds
   memory_size = var.lambda_memory_mb
 
   # SOC2: KMS CMK encrypts environment variables at rest (CKV_AWS_173).
@@ -99,13 +99,13 @@ resource "aws_lambda_function" "vote" {
   # ---------------------------------------------------------------------------
   environment {
     variables = {
-      ENVIRONMENT              = var.environment
-      POLL_RESULTS_TABLE       = aws_dynamodb_table.poll_results.name
-      VOTER_LOG_TABLE          = aws_dynamodb_table.voter_log.name
-      AUDIT_LOG_TABLE          = aws_dynamodb_table.audit_log.name
-      HMAC_SALT_SECRET_NAME    = aws_secretsmanager_secret.hmac_salt.name
-      VOTER_DEDUP_TTL_HOURS    = tostring(var.voter_dedup_ttl_hours)
-      AWS_REGION_NAME          = var.aws_region # Explicit; avoids ambiguity with SDK defaults.
+      ENVIRONMENT           = var.environment
+      POLL_RESULTS_TABLE    = aws_dynamodb_table.poll_results.name
+      VOTER_LOG_TABLE       = aws_dynamodb_table.voter_log.name
+      AUDIT_LOG_TABLE       = aws_dynamodb_table.audit_log.name
+      HMAC_SALT_SECRET_NAME = aws_secretsmanager_secret.hmac_salt.name
+      VOTER_DEDUP_TTL_HOURS = tostring(var.voter_dedup_ttl_hours)
+      AWS_REGION_NAME       = var.aws_region # Explicit; avoids ambiguity with SDK defaults.
     }
   }
 

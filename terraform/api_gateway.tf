@@ -32,28 +32,28 @@ resource "aws_apigatewayv2_api" "vote" {
 # Lambda integration — proxy all requests to the Go Lambda.
 # ---------------------------------------------------------------------------
 resource "aws_apigatewayv2_integration" "lambda" {
-  api_id             = aws_apigatewayv2_api.vote.id
-  integration_type   = "AWS_PROXY"
-  integration_uri    = aws_lambda_function.vote.invoke_arn
-  integration_method = "POST" # API GW always POSTs to Lambda internally.
-  payload_format_version = "2.0" # Lambda payload format v2 — cleaner event struct.
+  api_id                 = aws_apigatewayv2_api.vote.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.vote.invoke_arn
+  integration_method     = "POST" # API GW always POSTs to Lambda internally.
+  payload_format_version = "2.0"  # Lambda payload format v2 — cleaner event struct.
 }
 
 # ---------------------------------------------------------------------------
 # Routes — only the two required endpoints are exposed.
 # ---------------------------------------------------------------------------
 resource "aws_apigatewayv2_route" "post_vote" {
-  api_id             = aws_apigatewayv2_api.vote.id
-  route_key          = "POST /vote"
-  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  api_id    = aws_apigatewayv2_api.vote.id
+  route_key = "POST /vote"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
   # Explicit NONE: this is a public endpoint — no Cognito/JWT/IAM auth required (CKV_AWS_309).
   authorization_type = "NONE"
 }
 
 resource "aws_apigatewayv2_route" "get_results" {
-  api_id             = aws_apigatewayv2_api.vote.id
-  route_key          = "GET /results"
-  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  api_id    = aws_apigatewayv2_api.vote.id
+  route_key = "GET /results"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
   # Explicit NONE: GET /results is intentionally public (CKV_AWS_309).
   authorization_type = "NONE"
 }
@@ -79,7 +79,7 @@ resource "aws_apigatewayv2_stage" "default" {
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway.arn
-    
+
     # SOC2 compliant logging, intentionally omitting $context.identity.sourceIp for GDPR.
     format = jsonencode({
       requestId               = "$context.requestId"
@@ -93,7 +93,7 @@ resource "aws_apigatewayv2_stage" "default" {
       integrationErrorMessage = "$context.integrationErrorMessage"
     })
   }
-  
+
   tags = {
     Name = "${var.project_name}-${var.environment}-api-stage"
   }
