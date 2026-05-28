@@ -105,3 +105,59 @@ resource "aws_wafv2_web_acl" "cloudfront" {
     Compliance = "SOC2"
   }
 }
+
+# ---------------------------------------------------------------------------
+# WAF Logging (CKV2_AWS_31)
+# Log group name MUST start with "aws-waf-logs-" — this is an AWS requirement.
+# WAF is in us-east-1; the project CMK is eu-* regional, so KMS encryption
+# for this log group would require a separate us-east-1 CMK.
+# checkov:skip=CKV_AWS_158:WAF log group is in us-east-1; the project CMK is eu-* regional. A cross-region CMK for WAF logs would require a separate key lifecycle with disproportionate operational overhead.
+# ---------------------------------------------------------------------------
+resource "aws_cloudwatch_log_group" "waf" {
+  provider          = aws.us_east_1
+  name              = "aws-waf-logs-${var.project_name}-${var.environment}"
+  retention_in_days = var.log_retention_days
+
+  tags = {
+    Name       = "${var.project_name}-${var.environment}-waf-logs"
+    DataClass  = "Audit"
+    Compliance = "SOC2"
+  }
+}
+
+# Resource policy grants WAFv2 permission to write to the log group.
+# delivery.logs.amazonaws.com is the WAFv2 log-delivery service principal.
+resource "aws_cloudwatch_log_resource_policy" "waf" {
+  provider    = aws.us_east_1
+  policy_name = "${var.project_name}-${var.environment}-waf-logs-policy"
+
+  policy_document = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "delivery.logs.amazonaws.com"
+        }
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+        ]
+        Resource = "${aws_cloudwatch_log_group.waf.arn}:*"
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_wafv2_web_acl_logging_configuration" "cloudfront" {
+  provider                = aws.us_east_1
+  log_destination_configs = [aws_cloudwatch_log_group.waf.arn]
+  resource_arn            = aws_wafv2_web_acl.cloudfront.arn
+
+  depends_on = [aws_cloudwatch_log_resource_policy.waf]
+}

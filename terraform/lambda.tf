@@ -66,6 +66,8 @@ resource "aws_lambda_code_signing_config" "vote" {
 # Build it with: GOOS=linux GOARCH=arm64 go build -o bootstrap ./cmd/...
 # ---------------------------------------------------------------------------
 resource "aws_lambda_function" "vote" {
+  #checkov:skip=CKV_AWS_116:This Lambda is invoked synchronously by API Gateway. DLQ only applies to async invocations (SNS/SQS/EventBridge); errors are returned directly to the API caller.
+  #checkov:skip=CKV_AWS_117:Lambda accesses DynamoDB, Secrets Manager, and X-Ray via AWS service endpoints. Adding a VPC requires NAT gateway or VPC endpoints for all three services, which is disproportionate for this single-function serverless architecture.
   function_name = "${var.project_name}-${var.environment}-vote"
   description   = "Handles POST /vote and GET /results for the vote-on-it application."
 
@@ -91,6 +93,10 @@ resource "aws_lambda_function" "vote" {
 
   # Supply chain: validates the deployment package is signed before execution (CKV_AWS_272).
   code_signing_config_arn = aws_lambda_code_signing_config.vote.arn
+
+  # Caps Lambda concurrency to limit blast radius from traffic spikes (CKV_AWS_115).
+  # Set above API Gateway burst limit (50) to allow legitimate bursts.
+  reserved_concurrent_executions = var.lambda_reserved_concurrency
 
   # ---------------------------------------------------------------------------
   # Environment variables: NON-SENSITIVE configuration only.

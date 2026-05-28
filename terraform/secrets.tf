@@ -16,6 +16,7 @@ resource "random_bytes" "hmac_salt" {
 }
 
 resource "aws_secretsmanager_secret" "hmac_salt" {
+  #checkov:skip=CKV2_AWS_57:HMAC salt rotation requires a dedicated rotation Lambda that re-hashes existing VoterLog entries atomically. Rotation invalidates all voter hashes (acceptable per CLAUDE.md); implement as a separate operational runbook before enabling for production.
   name        = "${var.project_name}/${var.environment}/hmac-salt"
   description = "HMAC-SHA256 salt used to pseudonymise voter IP addresses. Never expose this value."
 
