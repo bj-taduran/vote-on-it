@@ -137,6 +137,12 @@ resource "aws_s3_bucket_lifecycle_configuration" "access_logs" {
 
     filter {}
 
+    # Abort incomplete multipart uploads after 7 days to prevent orphaned
+    # partial uploads accumulating storage costs (CKV_AWS_300).
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+
     transition {
       days          = 90
       storage_class = "GLACIER"

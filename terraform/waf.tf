@@ -109,11 +109,9 @@ resource "aws_wafv2_web_acl" "cloudfront" {
 # ---------------------------------------------------------------------------
 # WAF Logging (CKV2_AWS_31)
 # Log group name MUST start with "aws-waf-logs-" — this is an AWS requirement.
-# WAF is in us-east-1; the project CMK is eu-* regional, so KMS encryption
-# for this log group would require a separate us-east-1 CMK.
-# checkov:skip=CKV_AWS_158:WAF log group is in us-east-1; the project CMK is eu-* regional. A cross-region CMK for WAF logs would require a separate key lifecycle with disproportionate operational overhead.
 # ---------------------------------------------------------------------------
 resource "aws_cloudwatch_log_group" "waf" {
+  #checkov:skip=CKV_AWS_158:WAF log group is in us-east-1; the project CMK is eu-* regional. A cross-region CMK for WAF logs would require a separate key lifecycle with disproportionate operational overhead.
   provider          = aws.us_east_1
   name              = "aws-waf-logs-${var.project_name}-${var.environment}"
   retention_in_days = var.log_retention_days
