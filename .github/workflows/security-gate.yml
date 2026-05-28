@@ -24,7 +24,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-          cache: true
+          cache: ${{ hashFiles('lambda/go.sum') != '' }}
           cache-dependency-path: lambda/go.sum
 
       - name: Install gosec
@@ -32,14 +32,22 @@ jobs:
 
       # Fails the step (exit 1) on any HIGH or CRITICAL finding.
       # LOW / MEDIUM findings are reported in the SARIF but do not break the build.
+      # Guard: if Lambda source does not exist yet, emit an empty SARIF so the
+      # upload step succeeds without blocking the PR.
       - name: Run gosec
         working-directory: lambda
-        run: gosec -severity high -fmt sarif -out gosec-results.sarif ./...
+        run: |
+          if [ ! -f go.mod ]; then
+            echo "No Go module found — Lambda source not yet written. Emitting empty SARIF."
+            printf '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"gosec","version":"n/a","rules":[]}},"results":[]}]}' > gosec-results.sarif
+            exit 0
+          fi
+          gosec -severity high -fmt sarif -out gosec-results.sarif ./...
 
       # Always upload so reviewers can see findings even when the job failed.
       - name: Upload gosec SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: lambda/gosec-results.sarif
           category: gosec
@@ -56,7 +64,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-          cache: true
+          cache: ${{ hashFiles('lambda/go.sum') != '' }}
           cache-dependency-path: lambda/go.sum
 
       - name: Install govulncheck
@@ -180,8 +188,8 @@ jobs:
             --output-file-path checkov-results
 
       - name: Upload checkov SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('checkov-results/results_sarif.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: checkov-results/results_sarif.sarif
           category: checkov

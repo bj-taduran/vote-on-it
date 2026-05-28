@@ -37,9 +37,9 @@ resource "aws_dynamodb_table" "poll_results" {
   }
 
   tags = {
-    Name            = "${var.project_name}-${var.environment}-PollResults"
-    DataClass       = "Non-PII"
-    GDPRRelevant    = "false"
+    Name         = "${var.project_name}-${var.environment}-PollResults"
+    DataClass    = "Non-PII"
+    GDPRRelevant = "false"
   }
 }
 

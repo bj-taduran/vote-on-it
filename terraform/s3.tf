@@ -148,7 +148,7 @@ resource "aws_s3_bucket_logging" "frontend" {
 # ---------------------------------------------------------------------------
 resource "aws_s3_bucket_ownership_controls" "access_logs" {
   bucket = aws_s3_bucket.access_logs.id
-  
+
   rule {
     object_ownership = "BucketOwnerPreferred"
   }
@@ -159,7 +159,7 @@ resource "aws_s3_bucket_acl" "access_logs" {
     aws_s3_bucket_ownership_controls.access_logs,
     aws_s3_bucket_public_access_block.access_logs
   ]
-  
+
   bucket = aws_s3_bucket.access_logs.id
   acl    = "log-delivery-write"
 }
