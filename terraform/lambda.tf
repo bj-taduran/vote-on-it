@@ -77,8 +77,16 @@ resource "aws_lambda_function" "vote" {
   architectures = ["arm64"]
   handler       = "bootstrap" # Required name for custom runtime on AL2023.
 
-  filename         = "../lambda/dist/function.zip"
-  source_code_hash = filebase64sha256("../lambda/dist/function.zip")
+  filename = "../lambda/dist/function.zip"
+
+  # try() catches the filebase64sha256 error when the zip does not exist yet
+  # (e.g. during `terraform validate` in CI before the Lambda has been built).
+  # In any real apply the file must be present; the placeholder hash will cause
+  # Terraform to detect a change and prompt a re-deploy if it is ever used.
+  source_code_hash = try(
+    filebase64sha256("../lambda/dist/function.zip"),
+    base64sha256("lambda-not-yet-built")
+  )
 
   role        = aws_iam_role.lambda_exec.arn
   timeout     = var.lambda_timeout_seconds

@@ -141,15 +141,25 @@ jobs:
 
                   if not sev and HAS_CVSS:
                       for s in osv.get("severity", []):
-                          if s.get("type", "").startswith("CVSS_V3"):
+                          if not s.get("type", "").startswith("CVSS_V3"):
+                              continue
+                          raw = s.get("score", "")
+                          try:
+                              # Preferred path: raw is the CVSS vector string, e.g.
+                              # "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+                              score = float(CVSS3(raw).base_score)
+                          except Exception:
+                              # Fallback: some OSV records carry a pre-computed
+                              # numeric score ("7.5") instead of the full vector.
                               try:
-                                  score = float(CVSS3(s["score"]).base_score)
-                                  if score >= 9.0:
-                                      sev = "CRITICAL"
-                                  elif score >= 7.0:
-                                      sev = "HIGH"
-                              except Exception:
-                                  pass
+                                  score = float(raw)
+                              except (TypeError, ValueError):
+                                  continue
+                          if score >= 9.0:
+                              sev = "CRITICAL"
+                          elif score >= 7.0:
+                              sev = "HIGH"
+                          break  # first CVSS_V3 entry is authoritative
 
                   if sev:
                       failures.append(f"{vuln_id} [{sev}]: {summary}")
