@@ -48,7 +48,7 @@ provider "aws" {
 }
 
 # WAFv2 WebACLs for CloudFront MUST be created in us-east-1 regardless of the
-# application's primary region. This alias is used exclusively for WAF resources.
+# application's primary region (i.e. eu-central-1). This alias is used exclusively for WAF resources.
 # No EU personal data transits or is stored in this region.
 provider "aws" {
   alias  = "us_east_1"
