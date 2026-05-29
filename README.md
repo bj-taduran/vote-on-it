@@ -7,6 +7,7 @@ A serverless, single-question polling application built on AWS. Users land on a 
 ## Table of Contents
 
 - [Architecture](#architecture)
+  - [Security Architecture Diagram (Mermaid)](#security-architecture-diagram-mermaid)
 - [Technology Stack](#technology-stack)
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
@@ -44,6 +45,10 @@ CloudFront (PriceClass_100 — US + EU edges)
                     ├─ Audit write  → DynamoDB: AuditLog   (append-only)
                     └─ HMAC salt    ← Secrets Manager
 ```
+
+### Security Architecture Diagram (Mermaid)
+
+[docs/security/architecture.md](docs/security/architecture.md) contains a full Mermaid flowchart showing all four trust boundaries (Public Internet → AWS Edge → AWS Cloud → DynamoDB), annotated data-flow paths (TLS labels, sigv4, Lambda Proxy), the five processing steps inside the Lambda execution environment, and a STRIDE threat analysis table mapping each node to its implemented SOC2/GDPR controls. GitHub renders Mermaid natively in markdown preview.
 
 **User flow:**
 1. User visits the CloudFront URL → browser generates an anonymous UUID v4, stores it in `localStorage`.
@@ -205,7 +210,14 @@ All requests pass through CloudFront → API Gateway. CORS is locked to the Clou
 
 Records a vote. Lambda HMAC-SHA256s the `voter_id` (a client UUID — no IP address is transmitted or stored) and atomically writes to both `VoterLog` and `PollResults` via a DynamoDB Transaction.
 
-**Request body**
+**Request headers**
+
+| Header | Required | Value |
+|---|---|---|
+| `Content-Type` | Yes | `application/json` (charset suffix accepted, e.g. `application/json; charset=utf-8`) |
+
+**Request body** — maximum 512 bytes
+
 ```json
 {
   "poll_id":  "poll-2026-001",
@@ -216,9 +228,9 @@ Records a vote. Lambda HMAC-SHA256s the `voter_id` (a client UUID — no IP addr
 
 | Field | Type | Constraints |
 |---|---|---|
-| `poll_id` | string | Must match `^poll-[a-z0-9-]{1,50}$` |
-| `option` | string | Must be one of `"A"`, `"B"`, `"C"`, `"D"` |
-| `voter_id` | string | Must be a valid lowercase UUID v4 (client-generated, anonymous) |
+| `poll_id` | string | Required. Must match `^poll-[a-z0-9-]{1,50}$` |
+| `option` | string | Required. Must be one of `"A"`, `"B"`, `"C"`, `"D"` |
+| `voter_id` | string | Required. Lowercase UUID v4 — version nibble must be `4`, variant nibble must be `[89ab]` (e.g. `550e8400-e29b-41d4-a716-446655440000`) |
 
 Unknown JSON fields are rejected (`DisallowUnknownFields`).
 
@@ -227,7 +239,11 @@ Unknown JSON fields are rejected (`DisallowUnknownFields`).
 | Status | Code | Meaning |
 |---|---|---|
 | `200` | — | Vote recorded |
-| `400` | `INVALID_JSON` / `INVALID_POLL_ID` / `INVALID_OPTION` / `INVALID_VOTER_ID` | Validation failure |
+| `400` | `REQUEST_TOO_LARGE` | Body exceeds 512 bytes |
+| `400` | `INVALID_CONTENT_TYPE` | `Content-Type` header is missing or not `application/json` |
+| `400` | `INVALID_JSON` | Body is not valid JSON or contains unknown fields |
+| `400` | `MISSING_POLL_ID` / `MISSING_OPTION` / `MISSING_VOTER_ID` | Required field absent from body |
+| `400` | `INVALID_POLL_ID` / `INVALID_OPTION` / `INVALID_VOTER_ID` | Field present but fails format validation |
 | `409` | `VOTE_ALREADY_CAST` | Voter hash already recorded (duplicate vote) |
 | `500` | `INTERNAL_ERROR` | Internal error — no internal details returned |
 
@@ -276,7 +292,7 @@ This project is designed to meet SOC2 Type II and GDPR requirements. Every const
 | **Encryption at rest** | All three DynamoDB tables use a customer-managed KMS CMK. Lambda environment variables are encrypted with the same CMK. The Secrets Manager HMAC salt secret uses the CMK. Both S3 buckets use SSE-S3 (AES-256). |
 | **Key management** | Annual CMK key rotation is enabled. Key usage is auditable via CloudTrail. Key revocation constitutes cryptographic erasure of all CMK-encrypted data, which is the GDPR Art. 17 erasure mechanism for all pseudonymised voter records at once. |
 | **IAM least privilege** | The Lambda execution role has 7 separate inline policies, each scoped to exact resource ARNs: CloudWatch Logs (its own log group only), DynamoDB PollResults (`GetItem`, `Scan`, `UpdateItem`), DynamoDB VoterLog (`GetItem`, `PutItem`), DynamoDB AuditLog (`PutItem` only), Secrets Manager (exact secret ARN), KMS (exact CMK ARN), X-Ray. No `*` resource ARNs on any policy. |
-| **Input validation** | All Lambda handlers validate request bodies against strict Go structs with `DisallowUnknownFields()`. `poll_id` is validated against `^poll-[a-z0-9-]{1,50}$`. `option` must be one of `A`, `B`, `C`, `D`. `voter_id` must match a lowercase UUID v4 regex. All DynamoDB expressions use `ExpressionAttributeValues` — no raw user input is interpolated into expressions. |
+| **Input validation** | `POST /vote` enforces a 512-byte body size limit and requires `Content-Type: application/json` before any parsing begins. Bodies are decoded with `DisallowUnknownFields()` — extra keys return `400 INVALID_JSON`. Each required field (`poll_id`, `option`, `voter_id`) is checked for presence first (`MISSING_*` codes) and then for format: `poll_id` against `^poll-[a-z0-9-]{1,50}$`, `option` against the fixed enum `{A,B,C,D}`, `voter_id` against a strict UUID v4 regex (version nibble must be `4`, variant nibble in `[89ab]`). All DynamoDB expressions use `ExpressionAttributeValues` — no raw user input is interpolated into expressions. |
 | **Perimeter security** | AWS WAFv2 WebACL on CloudFront with three AWS Managed Rule Groups: `AWSManagedRulesCommonRuleSet` (OWASP Top 10), `AWSManagedRulesKnownBadInputsRuleSet` (Log4j, SSRF, Spring4Shell), `AWSManagedRulesAmazonIpReputationList`. WAF logs ship to a dedicated CloudWatch log group. |
 | **API throttling** | API Gateway default route settings: 50-request burst limit, 20 rps sustained. `reserved_concurrent_executions` is defined in `variables.tf` but commented out in dev — the account concurrency quota is too low to reserve executions while maintaining the mandatory 10-unit unreserved pool. Re-enable before production after requesting a quota increase (see `lambda.tf` for the checklist). |
 | **Supply chain** | Lambda code signing is configured via AWS Signer (`AWSLambda-SHA384-ECDSA`). Unsigned deployments are flagged; set `untrusted_artifact_on_deployment = "Enforce"` once CI/CD signs artifacts. |
