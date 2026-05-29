@@ -2,7 +2,7 @@
 # s3.tf — S3 bucket for static frontend assets.
 #
 # Security notes:
-#   - The bucket is PRIVATE. Public access is blocked at every level.
+#   - The bucket is PRIVATE. Public access is blocked at every level. This is the best practice.
 #   - CloudFront accesses it exclusively via Origin Access Control (OAC),
 #     which is the current AWS-recommended approach (supersedes OAI).
 #   - Versioning is enabled for accidental-deletion recovery (SOC2).
