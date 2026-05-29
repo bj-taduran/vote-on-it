@@ -1,0 +1,12 @@
+{
+  "_comment": "gosec pre-merge configuration for vote-on-it Lambda (Go). This file is passed via -conf to gosec. Severity and confidence thresholds (-severity high -confidence high) and the -exclude list are enforced via CLI flags in security-gate.yml — gosec v2 does not support those filters in the config file. This file handles only per-rule tuning.",
+  "global": {
+    "nosec": "false",
+    "show-ignored": "false",
+    "audit": "false"
+  },
+  "G101": {
+    "_comment": "Hardcoded credentials detector. Pattern extended beyond the default to include 'hmac' because the project stores an HMAC salt whose accidental inlining would violate GDPR Art. 32 (pseudonymisation relies entirely on the salt remaining secret). The salt name (not value) is intentionally passed as an env var; the value must always come from Secrets Manager at runtime.",
+    "pattern": "(?i)passwd|pass|password|secret|key|apikey|api_key|token|auth|hmac"
+  }
+}

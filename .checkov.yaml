@@ -1,0 +1,106 @@
+---
+# .checkov.yaml — Pre-merge Checkov configuration for vote-on-it.
+#
+# STRATEGY: Allowlist — only the check IDs listed under `check:` are evaluated.
+# Every other Checkov rule is silently skipped. This is intentional: the pre-merge
+# gate runs only the controls whose violation represents a catastrophic data breach,
+# full public exposure of sensitive data, a critical privilege escalation, or a
+# hardcoded secret. Medium/low/informational findings and best-practice linting
+# are deferred to the asynchronous Acceptance stage where they cannot block merges.
+#
+# HOW TO MODIFY THIS FILE
+#   ADD a check: confirm it is HIGH/CRITICAL severity, has <1% false-positive rate
+#   in serverless AWS Terraform, and directly enforces a SOC2 or GDPR control.
+#   Document which control it enforces and what the consequence of violation is.
+#
+#   REMOVE a check: move it to the Acceptance-stage config with a comment
+#   explaining why it was demoted (noisy, inapplicable, handled elsewhere).
+
+directory:
+  - terraform
+framework:
+  - terraform
+
+output:
+  - cli
+  - sarif
+
+# Belt-and-suspenders: soft-fail on low/medium in case a lower-severity check ID
+# is ever added to the `check:` list above. Has no effect when only HIGH/CRITICAL
+# checks are present — all findings from this allowlist are already build-blocking.
+soft-fail-on:
+  - LOW
+  - MEDIUM
+  - INFO
+
+check:
+
+  # ─── 1. S3 PUBLIC EXPOSURE PREVENTION ────────────────────────────────────────
+  # GDPR Art. 32 / SOC2 CC6.1 — CATASTROPHIC risk.
+  # An accidentally-public S3 bucket immediately exposes the VoterLog
+  # (pseudonymised hashes) and AuditLog (state-change records) to the internet.
+  # All four aws_s3_bucket_public_access_block attributes must be true independently;
+  # disabling any one creates a path by which objects can become public.
+  #
+  # CKV2_AWS_6 is the newer combined check for the same resource — including both
+  # CKV_AWS_5x and CKV2_AWS_6 provides coverage across checkov minor versions.
+
+  - CKV_AWS_53   # S3: block_public_acls = true (prevents ACL grants from making objects public)
+  - CKV_AWS_54   # S3: ignore_public_acls = true (ignores legacy ACLs on uploaded objects)
+  - CKV_AWS_55   # S3: block_public_policy = true (prevents bucket policies granting public read/write)
+  - CKV_AWS_56   # S3: restrict_public_buckets = true (blocks anonymous + cross-account access)
+  - CKV2_AWS_6   # S3: combined Public Access Block policy check (belt-and-suspenders)
+
+  # ─── 2. ENCRYPTION AT REST ────────────────────────────────────────────────────
+  # GDPR Art. 32 / SOC2 CC6.7 — MANDATORY.
+  # The VoterLog table holds pseudonymised voter hashes; AuditLog holds every
+  # state-change record. Unencrypted storage violates GDPR and is a SOC2 hard fail.
+  # CKV_AWS_19 guards S3 buckets; CKV_AWS_119 guards all three DynamoDB tables.
+  # Neither check cares whether encryption is SSE-S3 or SSE-KMS — any regression
+  # to unencrypted storage is immediately blocked.
+
+  - CKV_AWS_19   # S3: default server-side encryption enabled (AES-256 minimum)
+  - CKV_AWS_119  # DynamoDB: server-side encryption enabled (catches tables added without SSE)
+
+  # ─── 3. KEY MANAGEMENT ────────────────────────────────────────────────────────
+  # SOC2 CC6.1 / NIST SP 800-57 — HIGH risk.
+  # The project CMK protects DynamoDB tables, Secrets Manager (HMAC salt),
+  # and Lambda environment variables. Without annual rotation enabled, a
+  # compromised key material remains exploitable indefinitely. Key revocation
+  # is also the GDPR Art. 17 cryptographic-erasure mechanism for all CMK-encrypted
+  # data — a non-rotating key undermines this control.
+
+  - CKV_AWS_7    # KMS: annual automatic key rotation enabled
+
+  # ─── 4. AUDIT TRAIL DURABILITY ───────────────────────────────────────────────
+  # SOC2 CC7.2 / CC7.3 — HIGH risk.
+  # Loss of the AuditLog table or its request traces breaks the SOC2 evidence chain.
+  # PITR ensures the append-only AuditLog can be recovered after accidental deletion.
+  # X-Ray provides the distributed trace that links each API request to its DynamoDB
+  # writes — without it, per-request SOC2 audit evidence is incomplete.
+  # API Gateway access logging records every inbound request before it reaches Lambda;
+  # disabling it creates a gap in the evidence chain before application processing begins.
+
+  - CKV_AWS_28   # DynamoDB: point-in-time recovery enabled (AuditLog recoverability)
+  - CKV_AWS_50   # Lambda: X-Ray active tracing enabled (SOC2 per-request trace evidence)
+  - CKV_AWS_76   # API Gateway: access logging to CloudWatch enabled (pre-Lambda request record)
+
+  # ─── 5. TRANSPORT SECURITY & PERIMETER ───────────────────────────────────────
+  # SOC2 CC6.7 / GDPR Art. 32 — HIGH risk.
+  # Removing the WAF WebACL exposes the entire application to OWASP Top 10,
+  # Log4j/Spring4Shell, and known-bad-IP attacks with no mitigating control.
+  # CloudFront access logs are the forensic record required for SOC2 CC7.2
+  # incident-response evidence at the edge layer.
+
+  - CKV_AWS_68   # CloudFront: WAF WebACL attached (removes entire perimeter if absent)
+  - CKV_AWS_86   # CloudFront: access logging to S3 enabled (edge forensic record)
+
+  # ─── 6. HARDCODED SECRETS ─────────────────────────────────────────────────────
+  # SOC2 CC6.1 / GDPR Art. 32 — CRITICAL risk.
+  # A hardcoded credential in a Lambda environment variable is extractable by any
+  # principal with lambda:GetFunctionConfiguration — instant account compromise.
+  # The project pattern is to pass only the SECRET NAME to Lambda and fetch the
+  # value at runtime from Secrets Manager. This check catches any regression where
+  # a secret value is inlined instead of the name.
+
+  - CKV_AWS_45   # Lambda: no hard-coded credentials in environment variables

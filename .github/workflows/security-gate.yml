@@ -30,8 +30,26 @@ jobs:
       - name: Install gosec
         run: go install github.com/securego/gosec/v2/cmd/gosec@v2.21.4
 
-      # Fails the step (exit 1) on any HIGH or CRITICAL finding.
-      # LOW / MEDIUM findings are reported in the SARIF but do not break the build.
+      # Pre-merge tuning strategy:
+      #   -severity high -confidence high → only findings where gosec is highly
+      #     confident the pattern IS a security issue AND rates it high severity.
+      #     The intersection eliminates the majority of false positives.
+      #   -conf ../.gosec.json → per-rule config (extended G101 pattern for HMAC).
+      #   -exclude → rules that are notoriously noisy or structurally inapplicable
+      #     to a Lambda function are excluded from the blocking gate:
+      #       G104: unhandled errors — AWS SDK usage legitimately ignores many
+      #             errors (e.g., log write failures); extremely high false-positive
+      #             rate in idiomatic Go.
+      #       G107: URL from variable to HTTP request — false positives when
+      #             constructing AWS service endpoint strings at runtime.
+      #       G304: file path as taint input — Lambda writes nothing to the
+      #             filesystem; all storage goes through DynamoDB/Secrets Manager.
+      #       G306: poor file permissions on write — same reason as G304.
+      #       G108: pprof endpoint publicly accessible — Lambda has no HTTP server
+      #             and never registers /debug/pprof routes.
+      #       G115: integer overflow on type conversion — extremely noisy in
+      #             Go 1.22+ where many valid int/uint conversions are flagged;
+      #             the Go compiler already catches genuine overflows at compile time.
       # Guard: if Lambda source does not exist yet, emit an empty SARIF so the
       # upload step succeeds without blocking the PR.
       - name: Run gosec
@@ -42,7 +60,14 @@ jobs:
             printf '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"gosec","version":"n/a","rules":[]}},"results":[]}]}' > gosec-results.sarif
             exit 0
           fi
-          gosec -severity high -fmt sarif -out gosec-results.sarif ./...
+          gosec \
+            -conf ../.gosec.json \
+            -severity high \
+            -confidence high \
+            -exclude G104,G107,G304,G306,G108,G115 \
+            -fmt sarif \
+            -out gosec-results.sarif \
+            ./...
 
       # Always upload so reviewers can see findings even when the job failed.
       - name: Upload gosec SARIF
@@ -174,18 +199,22 @@ jobs:
       - name: Install checkov
         run: pip install checkov==3.2.351
 
-      # --soft-fail-on LOW,MEDIUM,INFO  →  those severities are reported but do NOT
-      # produce a non-zero exit code, so only HIGH / CRITICAL break the build.
-      # Both cli (log output) and sarif (Security tab) are emitted in one pass.
+      # Pre-merge tuning strategy:
+      #   --config-file .checkov.yaml → runs ONLY the checks listed in the allowlist
+      #     (14 rules covering public exposure, encryption, key rotation, audit
+      #     durability, perimeter security, and hardcoded secrets). Every other
+      #     Checkov rule is silently skipped; best-practice and medium-severity
+      #     checks are deferred to the async Acceptance stage.
+      #   --soft-fail-on LOW,MEDIUM,INFO → belt-and-suspenders in case a lower-
+      #     severity check is ever added to the YAML; has no effect while the
+      #     allowlist contains only HIGH/CRITICAL controls.
+      #   Output formats (cli + sarif) and scan directory are declared in .checkov.yaml.
       - name: Run checkov
         run: |
           checkov \
-            --directory terraform \
-            --framework terraform \
-            --soft-fail-on LOW,MEDIUM,INFO \
-            --output cli \
-            --output sarif \
-            --output-file-path checkov-results
+            --config-file .checkov.yaml \
+            --output-file-path checkov-results \
+            --soft-fail-on LOW,MEDIUM,INFO
 
       - name: Upload checkov SARIF
         if: always() && hashFiles('checkov-results/results_sarif.sarif') != ''

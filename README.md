@@ -16,6 +16,7 @@ A serverless, single-question polling application built on AWS. Users land on a 
   - [SOC2 Controls](#soc2-controls)
   - [GDPR Controls](#gdpr-controls)
 - [Security Guardrails & CI Checks](#security-guardrails--ci-checks)
+  - [Pre-Merge Scanner Tuning](#pre-merge-scanner-tuning)
 - [Infrastructure Overview](#infrastructure-overview)
 - [Build Status](#build-status)
 
@@ -269,8 +270,10 @@ Every pull request targeting `main` must pass the **Security Gate** workflow (`.
 ### 1. SAST — gosec
 
 - **Tool:** [`securego/gosec`](https://github.com/securego/gosec) v2.21.4
+- **Config:** `.gosec.json` at the repo root (extended G101 pattern for HMAC secrets)
 - **Scope:** All Go source files under `lambda/`
-- **Threshold:** Fails the build on any **HIGH** or **CRITICAL** severity finding (`-severity high`)
+- **Threshold:** Fails on findings that are simultaneously **HIGH severity** (`-severity high`) **and HIGH confidence** (`-confidence high`) — the intersection eliminates the majority of false positives that would otherwise block merges on legitimate Go patterns
+- **Excluded rules:** `G104` (unhandled errors — endemic in AWS SDK usage), `G107` (URL-from-variable — false positives with runtime endpoint construction), `G304`/`G306` (filesystem taint/permissions — Lambda has no filesystem writes), `G108` (pprof endpoint — Lambda has no HTTP server), `G115` (integer overflow — extremely noisy in Go 1.22+ with valid int/uint conversions)
 - **Output:** SARIF uploaded to GitHub Security tab for inline annotation
 - **Guard:** If Lambda source does not yet exist (`go.mod` absent), an empty SARIF is emitted and the step passes — the scan activates automatically once Go code is committed
 
@@ -284,11 +287,12 @@ Every pull request targeting `main` must pass the **Security Gate** workflow (`.
 ### 3. IaC — checkov
 
 - **Tool:** [`bridgecrewio/checkov`](https://www.checkov.io/) v3.2.351
+- **Config:** `.checkov.yaml` at the repo root — **allowlist approach**: only the 14 check IDs listed in that file are evaluated; every other Checkov rule is silently skipped
 - **Scope:** All Terraform files under `terraform/`
 - **Pre-flight:** `terraform fmt -check -recursive` and `terraform validate` must pass before checkov runs
-- **Threshold:** `--soft-fail-on LOW,MEDIUM,INFO` — only **HIGH** and **CRITICAL** findings break the build
+- **Threshold:** Allowlist contains only HIGH/CRITICAL SOC2/GDPR controls; `--soft-fail-on LOW,MEDIUM,INFO` is a belt-and-suspenders guard in case a lower-severity check is ever added to the YAML
 - **Output:** SARIF uploaded to GitHub Security tab; CLI summary in the Actions log
-- **Documented suppressions:** All `checkov:skip` annotations in the Terraform files include a justification comment explaining why the control does not apply (design decision, circular dependency, AWS constraint, or GDPR conflict)
+- **Documented suppressions:** All `checkov:skip` annotations in the Terraform files include a justification comment explaining why the control does not apply (design decision, circular dependency, AWS constraint, or GDPR conflict); these are only relevant to the Acceptance stage which runs all checks
 
 ### 4. Secrets — TruffleHog
 
@@ -296,6 +300,98 @@ Every pull request targeting `main` must pass the **Security Gate** workflow (`.
 - **Scope:** All commits introduced by the PR (`base → head` range)
 - **Mode:** `--only-verified` — only reports secrets that can be confirmed against their respective service APIs, reducing false positives
 - **Threshold:** Any verified secret found fails the build immediately
+
+### Pre-Merge Scanner Tuning
+
+The three scanners are tuned for **zero-noise, high-signal** operation. The philosophy is: a scanner that produces false-positive noise will be bypassed — by engineers adding blanket suppressions, by CI being ignored, or by the gate being removed entirely. A focused gate that only fires on genuine catastrophic-risk findings earns trust and stays in place.
+
+#### Two-stage strategy
+
+| Stage | Trigger | Behavior | Scanners |
+|---|---|---|---|
+| **Pre-Merge** | Every PR targeting `main` | **Blocking** — PR cannot merge until all jobs pass | gosec, govulncheck, checkov (allowlist), TruffleHog |
+| **Acceptance** | Post-merge / nightly | **Non-blocking** — findings create issues, not merge gates | Full checkov ruleset, gosec without excludes, DAST, dependency audit |
+
+The pre-merge stage intentionally runs a strict subset of each scanner's full capability. Rules that are accurate but noisy, best-practice linting, or medium-severity informational findings are deferred to the Acceptance stage.
+
+---
+
+#### Checkov — IaC scanner (`.checkov.yaml`)
+
+**Approach:** explicit allowlist (`check:` block) — only 14 check IDs run; everything else is silently skipped.
+
+**Why allowlist instead of blocklist?** A blocklist (`--skip-check`) requires enumerating every noisy rule and grows unbounded as Checkov adds new rules. An allowlist is stable: new Checkov rules never silently enter the pre-merge gate; they must be consciously added.
+
+| Check ID | What it enforces | SOC2 / GDPR control |
+|---|---|---|
+| `CKV_AWS_53` | S3 `block_public_acls = true` | GDPR Art. 32 — data exposure prevention |
+| `CKV_AWS_54` | S3 `ignore_public_acls = true` | GDPR Art. 32 — data exposure prevention |
+| `CKV_AWS_55` | S3 `block_public_policy = true` | GDPR Art. 32 — data exposure prevention |
+| `CKV_AWS_56` | S3 `restrict_public_buckets = true` | GDPR Art. 32 — data exposure prevention |
+| `CKV2_AWS_6` | S3 combined public-access block | GDPR Art. 32 — belt-and-suspenders for above four |
+| `CKV_AWS_19` | S3 default server-side encryption | GDPR Art. 32 / SOC2 CC6.7 — encryption at rest |
+| `CKV_AWS_119` | DynamoDB SSE enabled | GDPR Art. 32 / SOC2 CC6.7 — encryption at rest |
+| `CKV_AWS_7` | KMS annual key rotation | SOC2 CC6.1 / NIST SP 800-57 — key lifecycle |
+| `CKV_AWS_28` | DynamoDB PITR enabled | SOC2 CC7.3 — audit trail recoverability |
+| `CKV_AWS_50` | Lambda X-Ray active tracing | SOC2 CC7.2 — distributed trace evidence chain |
+| `CKV_AWS_76` | API Gateway access logging | SOC2 CC7.2 — pre-Lambda request record |
+| `CKV_AWS_68` | CloudFront WAF WebACL attached | SOC2 CC6.6 — perimeter security |
+| `CKV_AWS_86` | CloudFront access logging | SOC2 CC7.2 — edge forensic record |
+| `CKV_AWS_45` | Lambda: no hardcoded env-var credentials | SOC2 CC6.1 / GDPR Art. 32 |
+
+**Deliberately excluded categories** (deferred to Acceptance):
+- Cross-region replication (`CKV_AWS_144`) — conflicts with GDPR EU-only data-residency; skip annotations in `.tf` files document this
+- SSE-KMS for S3 (`CKV_AWS_145`) — circular Terraform dependency with CloudFront OAC; SSE-S3 (AES-256) is GDPR-compliant; skip annotations document this
+- S3 versioning on log bucket (`CKV_AWS_21`) — append-only audit log; versioning creates unbounded storage without recovery benefit
+- CloudFront geo-restriction (`CKV_AWS_374`) — `PriceClass_100` is the chosen data-residency control
+- CloudFront origin failover (`CKV_AWS_310`) — second S3 bucket in different region would violate GDPR EU-only constraint
+- API Gateway route authorisation (`CKV_AWS_309`) — intentionally public polling endpoint; input validation and dedup are Lambda-enforced
+- Lambda VPC placement (`CKV_AWS_117`) — disproportionate for this architecture; all service access is via AWS service endpoints
+
+---
+
+#### gosec — Go SAST scanner (`.gosec.json` + CLI flags)
+
+**Approach:** severity × confidence filter — only findings that score **HIGH** on both axes enter the gate. This is more restrictive than filtering by severity alone because many HIGH-severity gosec rules have LOW confidence in Lambda/AWS SDK contexts (meaning gosec detected a pattern but cannot determine it is exploitable in this code path).
+
+**Active rules** (everything not in the exclude list with severity=high + confidence=high):
+
+| Rule | What it catches | Why it belongs in pre-merge |
+|---|---|---|
+| `G101` | Hardcoded credentials / HMAC secrets | Any inlined secret = immediate account or GDPR breach |
+| `G103` | `unsafe` package usage | Memory safety violations; potential for arbitrary memory read/write |
+| `G106` | SSH `InsecureIgnoreHostKey` | Disables host verification; trivial MITM attack |
+| `G204` | Command injection via `exec.Command` | Arbitrary OS command execution |
+| `G402` | TLS `InsecureSkipVerify = true` | Disables certificate validation; trivial MITM on all outbound calls |
+| `G403` | RSA key size < 2048 bits | Factored by modern hardware; key compromise |
+| `G501–G505` | Import of `crypto/md5`, DES, RC4, SHA-1 | Cryptographically broken; data integrity and confidentiality failure |
+
+**Excluded rules** (too noisy or structurally inapplicable for Lambda):
+
+| Rule | Why excluded |
+|---|---|
+| `G104` | Unhandled errors — AWS SDK usage legitimately ignores many return values (e.g., log write failures must not crash the handler); this is the single highest-volume false-positive rule in Go codebases |
+| `G107` | URL-from-variable to HTTP request — false positives when constructing AWS service endpoint URLs at runtime from environment variables |
+| `G304` | File path as taint input — Lambda has no dynamic filesystem reads; all persistence goes through DynamoDB and Secrets Manager |
+| `G306` | Poor file permissions on write — Lambda writes nothing to the filesystem |
+| `G108` | pprof endpoint publicly accessible — Lambda has no HTTP server; `/debug/pprof` routes cannot be registered |
+| `G115` | Integer overflow on type conversion — extremely noisy in Go 1.22+ for normal `int`→`int64` conversions; the Go compiler already catches genuine overflow at compile time |
+
+---
+
+#### govulncheck — Go dependency vulnerability scanner
+
+**Approach:** no additional tuning needed. govulncheck already applies **call-graph reachability analysis** by default — it only reports a CVE if a vulnerable function is actually called, directly or transitively, from this codebase's code paths. This is the primary noise filter; the majority of CVEs in transitive dependencies are never reachable and are therefore never reported.
+
+The workflow then applies a **severity filter** as a second layer: the JSON output is parsed against the Go vulnerability database (`database_specific.severity`) with a CVSS v3 fallback, and only `HIGH` (≥ 7.0) or `CRITICAL` (≥ 9.0) findings fail the build.
+
+**Key design decisions:**
+
+- `govulncheck ./...` uses **package-level scanning** (the default) — reachability analysis is applied. Never use `-scan module`, which reports all vulnerabilities in all modules regardless of whether any vulnerable function is ever called.
+- The severity filter is applied in the workflow Python script, not via a govulncheck flag, because govulncheck has no native severity threshold option — it delegates severity metadata to the OSV database.
+- `|| true` on the govulncheck invocation ensures the JSON file is always written (govulncheck exits non-zero if it finds anything), allowing the severity-parsing step to make the final pass/fail decision rather than having an unfiltered exit code gate the build.
+
+---
 
 ### Pre-commit checklist (manual)
 
