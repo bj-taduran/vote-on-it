@@ -225,6 +225,7 @@ jobs:
 
   # ── 4. Secrets ─────────────────────────────────────────────────────────────
   secrets-trufflehog:
+
     name: Secrets — TruffleHog
     runs-on: ubuntu-latest
     steps:
@@ -243,3 +244,61 @@ jobs:
           base: ${{ github.event.pull_request.base.sha }}
           head: ${{ github.event.pull_request.head.sha }}
           extra_args: --only-verified
+
+  # ── 5. Unit Tests ──────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests — Go (>= 80% coverage)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: ${{ hashFiles('lambda/go.sum') != '' }}
+          cache-dependency-path: lambda/go.sum
+
+      # -count=1 disables the test-result cache so tests always execute on every PR.
+      # -covermode=atomic gives accurate coverage for any concurrent code paths.
+      # Guard: if go.mod is absent (Lambda not yet written), skip gracefully rather
+      # than failing — mirrors the guard pattern used in the gosec job.
+      - name: Run tests with coverage
+        working-directory: lambda
+        run: |
+          if [ ! -f go.mod ]; then
+            echo "No Go module found — Lambda source not yet written. Skipping tests."
+            exit 0
+          fi
+          go test -count=1 -covermode=atomic -coverprofile=coverage.out ./...
+
+      # Parse the "total:" line from go tool cover and enforce the 80% threshold.
+      # awk strips the trailing % then compares as a float so values like 98.0 work.
+      # Any coverage below the threshold emits a GitHub Actions error annotation
+      # and exits non-zero, blocking the merge.
+      - name: Enforce 80% coverage threshold
+        working-directory: lambda
+        run: |
+          if [ ! -f coverage.out ]; then
+            echo "coverage.out not found — tests were skipped."
+            exit 0
+          fi
+          COVERAGE=$(go tool cover -func=coverage.out | grep '^total:' | awk '{gsub(/%/,""); print $NF}')
+          echo "Total statement coverage: ${COVERAGE}%"
+          if awk "BEGIN { exit !($COVERAGE >= 80.0) }"; then
+            echo "Coverage ${COVERAGE}% meets the >= 80% pre-merge threshold."
+          else
+            echo "::error::Coverage ${COVERAGE}% is below the required 80% pre-merge threshold. Add tests to bring coverage up before merging."
+            exit 1
+          fi
+
+      # Retain the coverage profile as a downloadable artifact on every run so
+      # reviewers can inspect per-function breakdown without re-running locally.
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage-report
+          path: lambda/coverage.out
+          retention-days: 7

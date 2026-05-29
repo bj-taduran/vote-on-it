@@ -4,3 +4,9 @@ terraform/*.tfstate.backup
 terraform-backend/.terraform/
 terraform-backend/*.tfstate
 terraform-backend/*.tfstate.backup
+
+# Lambda build artefacts — compiled binary and deployment zip
+lambda/dist/
+
+# Go toolchain cache (not part of the source tree)
+lambda/vendor/

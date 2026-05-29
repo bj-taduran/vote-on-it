@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vote on It</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+</head>
+<body>
+  <main class="card">
+    <h1 class="question" id="question"></h1>
+
+    <!-- Voting buttons — hidden after a vote is cast -->
+    <div class="vote-grid" id="vote-grid">
+      <button class="vote-btn" data-option="A" id="btn-A"></button>
+      <button class="vote-btn" data-option="B" id="btn-B"></button>
+      <button class="vote-btn" data-option="C" id="btn-C"></button>
+      <button class="vote-btn" data-option="D" id="btn-D"></button>
+    </div>
+
+    <!-- Status message (loading / error / already voted) -->
+    <p class="status" id="status" hidden></p>
+
+    <!-- Results bar chart — revealed after voting -->
+    <div class="results" id="results" hidden>
+      <h2 class="results-heading">Live Results</h2>
+      <div class="chart" id="chart"></div>
+      <p class="total" id="total"></p>
+    </div>
+  </main>
+
+  <!--
+    DEPLOYMENT CONFIG — edit config.js to set apiUrl after each terraform apply.
+    Keeping config in an external file avoids inline scripts and keeps the CSP
+    clean: script-src 'self' covers both config.js and app.js with no hashes needed.
+  -->
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
