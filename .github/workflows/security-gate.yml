@@ -128,8 +128,10 @@ jobs:
                       msg = json.loads(line)
                   except ValueError:
                       continue
+                  if not isinstance(msg, dict):
+                      continue
                   osv = msg.get("osv")
-                  if not osv:
+                  if not osv or not isinstance(osv, dict):
                       continue
                   vuln_id = osv.get("id", "unknown")
                   summary = osv.get("summary", "no summary")
