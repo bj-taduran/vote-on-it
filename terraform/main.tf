@@ -3,7 +3,7 @@
 #
 # Compliance notes:
 #   - SOC2: All resources are tagged for asset inventory and auditability.
-#   - GDPR:  The AWS region is explicitly constrained to eu-west-1 to satisfy
+#   - GDPR:  The AWS region is explicitly constrained to eu-central-1 to satisfy
 #             EU data residency requirements. Change if your residency differs.
 ##############################################################################
 
@@ -28,7 +28,7 @@ terraform {
   # backend "s3" {
   #   bucket         = "vote-on-it-tfstate-bjt"
   #   key            = "vote-on-it/terraform.tfstate"
-  #   region         = "eu-west-1"
+  #   region         = "eu-central-1"
   #   dynamodb_table = "terraform-state-lock"
   #   encrypt        = true
   # }
