@@ -65,6 +65,7 @@ resource "aws_lambda_code_signing_config" "vote" {
 #   ../lambda/dist/function.zip
 # Build it with: GOOS=linux GOARCH=arm64 go build -o bootstrap ./cmd/...
 # ---------------------------------------------------------------------------
+# checkov:skip=CKV_AWS_115: "Cannot reserve concurrency due to AWS account limits in dev environment"
 resource "aws_lambda_function" "vote" {
   #checkov:skip=CKV_AWS_116:This Lambda is invoked synchronously by API Gateway. DLQ only applies to async invocations (SNS/SQS/EventBridge); errors are returned directly to the API caller.
   #checkov:skip=CKV_AWS_117:Lambda accesses DynamoDB, Secrets Manager, and X-Ray via AWS service endpoints. Adding a VPC requires NAT gateway or VPC endpoints for all three services, which is disproportionate for this single-function serverless architecture.
@@ -94,9 +95,22 @@ resource "aws_lambda_function" "vote" {
   # Supply chain: validates the deployment package is signed before execution (CKV_AWS_272).
   code_signing_config_arn = aws_lambda_code_signing_config.vote.arn
 
-  # Caps Lambda concurrency to limit blast radius from traffic spikes (CKV_AWS_115).
-  # Set above API Gateway burst limit (50) to allow legitimate bursts.
-  reserved_concurrent_executions = var.lambda_reserved_concurrency
+  # reserved_concurrent_executions = var.lambda_reserved_concurrency
+  #
+  # Commented out: dev account has insufficient total concurrency quota to reserve
+  # executions while maintaining the mandatory 10-unit unreserved pool
+  # (InvalidParameterValueException from AWS).
+  #
+  # RE-ENABLE THIS BEFORE PRODUCTION:
+  #   1. Request a Lambda concurrency quota increase via AWS Service Quotas
+  #      (default 1,000 per region; request ≥ 200 for this workload).
+  #   2. Set var.lambda_reserved_concurrency to a value that leaves ≥ 100
+  #      unreserved units for other functions in the account.
+  #   3. Keep the value above the API Gateway burst limit (currently 50) so
+  #      legitimate traffic bursts are not throttled at the Lambda layer.
+  #   4. In production, reserved concurrency is a SOC2 blast-radius control:
+  #      it prevents a traffic spike or abuse scenario from exhausting the
+  #      entire account concurrency pool and taking down unrelated functions.
 
   # ---------------------------------------------------------------------------
   # Environment variables: NON-SENSITIVE configuration only.
