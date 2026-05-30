@@ -10,3 +10,10 @@ lambda/dist/
 
 # Go toolchain cache (not part of the source tree)
 lambda/vendor/
+
+# Tachi framework distribution files (tool installer artefacts — not project code)
+adapters/
+brand/
+schemas/
+scripts/
+templates/

@@ -1,0 +1,813 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Tachi",
+          "semanticVersion": "1.4",
+          "informationUri": "https://github.com/edward/vote-on-it",
+          "supportedTaxonomies": [
+            { "name": "OWASP", "index": 0 },
+            { "name": "CWE", "index": 1 }
+          ],
+          "rules": [
+            {
+              "id": "tachi/stride/spoofing",
+              "shortDescription": { "text": "Identity spoofing threats" },
+              "fullDescription": { "text": "Threats where an attacker assumes the identity of another user, system, or component to gain unauthorized access or perform unauthorized actions. Applies to external entities and processes." },
+              "help": {
+                "text": "Review authentication mechanisms, token validation, UUID generation security, and identity verification at all trust boundaries.",
+                "markdown": "## Spoofing Threats\n\nReview authentication mechanisms, token validation, UUID generation security, and identity verification at all trust boundaries.\n\n**References**: OWASP A07 (Identification and Authentication Failures), CWE-287 (Improper Authentication), CWE-290 (Authentication Bypass by Spoofing)"
+              },
+              "properties": {
+                "tags": ["security", "stride", "spoofing", "authentication", "owasp", "cwe"],
+                "security-severity": "9.0"
+              },
+              "relationships": [
+                { "target": { "id": "A07", "toolComponent": { "name": "OWASP" } }, "kinds": ["relevant"] },
+                { "target": { "id": "CWE-287", "toolComponent": { "name": "CWE" } }, "kinds": ["relevant"] }
+              ]
+            },
+            {
+              "id": "tachi/stride/tampering",
+              "shortDescription": { "text": "Data tampering threats" },
+              "fullDescription": { "text": "Threats where an attacker modifies data, code, or configuration to alter system behavior or corrupt data integrity. Applies to processes, data stores, and data flows." },
+              "help": {
+                "text": "Review data validation, integrity controls, IAM least-privilege enforcement, and input handling at all processing points.",
+                "markdown": "## Tampering Threats\n\nReview data validation, integrity controls, IAM least-privilege enforcement, and input handling at all processing points.\n\n**References**: OWASP A08 (Software and Data Integrity Failures), CWE-345 (Insufficient Verification of Data Authenticity)"
+              },
+              "properties": {
+                "tags": ["security", "stride", "tampering", "integrity", "owasp", "cwe"],
+                "security-severity": "9.0"
+              },
+              "relationships": [
+                { "target": { "id": "A08", "toolComponent": { "name": "OWASP" } }, "kinds": ["relevant"] },
+                { "target": { "id": "CWE-345", "toolComponent": { "name": "CWE" } }, "kinds": ["relevant"] }
+              ]
+            },
+            {
+              "id": "tachi/stride/repudiation",
+              "shortDescription": { "text": "Repudiation threats" },
+              "fullDescription": { "text": "Threats where an attacker or user denies performing an action, exploiting gaps in audit trails, logging completeness, or non-repudiation controls." },
+              "help": {
+                "text": "Review audit logging completeness, log format specification, correlation ID propagation, and forensic reconstruction capability.",
+                "markdown": "## Repudiation Threats\n\nReview audit logging completeness, log format specification, correlation ID propagation, and forensic reconstruction capability.\n\n**References**: OWASP A09 (Security Logging and Monitoring Failures), CWE-778 (Insufficient Logging)"
+              },
+              "properties": {
+                "tags": ["security", "stride", "repudiation", "logging", "audit", "owasp", "cwe"],
+                "security-severity": "5.0"
+              },
+              "relationships": [
+                { "target": { "id": "A09", "toolComponent": { "name": "OWASP" } }, "kinds": ["relevant"] },
+                { "target": { "id": "CWE-778", "toolComponent": { "name": "CWE" } }, "kinds": ["relevant"] }
+              ]
+            },
+            {
+              "id": "tachi/stride/information-disclosure",
+              "shortDescription": { "text": "Information disclosure threats" },
+              "fullDescription": { "text": "Threats where sensitive data is exposed to unauthorized parties through logs, error messages, API responses, configuration leakage, or data store misconfigurations." },
+              "help": {
+                "text": "Review error response content, logging PII controls, access policies on data stores, and information leakage in response headers and bodies.",
+                "markdown": "## Information Disclosure Threats\n\nReview error response content, logging PII controls, access policies on data stores, and information leakage in response headers and bodies.\n\n**References**: OWASP A01 (Broken Access Control), CWE-200 (Exposure of Sensitive Information to an Unauthorized Actor), GDPR Article 4(5) (Pseudonymisation requirements)"
+              },
+              "properties": {
+                "tags": ["security", "stride", "information-disclosure", "data-exposure", "gdpr", "owasp", "cwe"],
+                "security-severity": "8.0"
+              },
+              "relationships": [
+                { "target": { "id": "A01", "toolComponent": { "name": "OWASP" } }, "kinds": ["relevant"] },
+                { "target": { "id": "CWE-200", "toolComponent": { "name": "CWE" } }, "kinds": ["relevant"] }
+              ]
+            },
+            {
+              "id": "tachi/stride/denial-of-service",
+              "shortDescription": { "text": "Denial of service threats" },
+              "fullDescription": { "text": "Threats where an attacker degrades or eliminates system availability by exhausting resources, overwhelming capacity limits, or exploiting dependency chains." },
+              "help": {
+                "text": "Review rate limiting configurations, DynamoDB capacity modes, Lambda concurrency limits, WAF rate-based rules, and dependency chain resilience.",
+                "markdown": "## Denial of Service Threats\n\nReview rate limiting configurations, DynamoDB capacity modes, Lambda concurrency limits, WAF rate-based rules, and dependency chain resilience.\n\n**References**: OWASP A05 (Security Misconfiguration), CWE-400 (Uncontrolled Resource Consumption)"
+              },
+              "properties": {
+                "tags": ["security", "stride", "denial-of-service", "availability", "rate-limiting", "owasp", "cwe"],
+                "security-severity": "8.0"
+              },
+              "relationships": [
+                { "target": { "id": "A05", "toolComponent": { "name": "OWASP" } }, "kinds": ["relevant"] },
+                { "target": { "id": "CWE-400", "toolComponent": { "name": "CWE" } }, "kinds": ["relevant"] }
+              ]
+            },
+            {
+              "id": "tachi/stride/elevation-of-privilege",
+              "shortDescription": { "text": "Privilege escalation threats" },
+              "fullDescription": { "text": "Threats where an attacker gains capabilities or permissions beyond those intended, enabling unauthorized actions such as poll outcome manipulation, data modification, or access to protected resources." },
+              "help": {
+                "text": "Review IAM least-privilege policies, Sybil resistance mechanisms, route authorization, and SSRF protections.",
+                "markdown": "## Elevation of Privilege Threats\n\nReview IAM least-privilege policies, Sybil resistance mechanisms, route authorization, and SSRF protections.\n\n**References**: OWASP A01 (Broken Access Control), CWE-269 (Improper Privilege Management)"
+              },
+              "properties": {
+                "tags": ["security", "stride", "elevation-of-privilege", "access-control", "iam", "owasp", "cwe"],
+                "security-severity": "9.0"
+              },
+              "relationships": [
+                { "target": { "id": "A01", "toolComponent": { "name": "OWASP" } }, "kinds": ["relevant"] },
+                { "target": { "id": "CWE-269", "toolComponent": { "name": "CWE" } }, "kinds": ["relevant"] }
+              ]
+            }
+          ]
+        }
+      },
+      "taxonomies": [
+        {
+          "name": "OWASP",
+          "version": "2021",
+          "informationUri": "https://owasp.org/Top10/",
+          "organization": "OWASP Foundation",
+          "shortDescription": { "text": "OWASP Top 10 Web Application Security Risks" }
+        },
+        {
+          "name": "CWE",
+          "version": "4.13",
+          "informationUri": "https://cwe.mitre.org/",
+          "organization": "MITRE",
+          "shortDescription": { "text": "Common Weakness Enumeration" }
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "tachi/stride/spoofing",
+          "message": {
+            "text": "Voter UUID may be stolen via localStorage extraction by XSS, malicious extension, or browser compromise, enabling fraudulent vote casting on behalf of the victim.",
+            "markdown": "Strengthen CSP to block inline scripts and restrict script-src to known origins; implement SRI on all frontend assets; consider supplementing UUID identity with a short-lived server-side session token."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "User Browser", "fullyQualifiedName": "Public Internet/User Browser", "kind": "external-entity" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "69675c639adc314d", "findingId/v1": "S-1" },
+          "properties": { "baselineState": "new", "maestro-layer": "L7 — Agent Ecosystem", "tags": ["security", "stride", "spoofing", "maestro-layer:L7"] }
+        },
+        {
+          "ruleId": "tachi/stride/spoofing",
+          "message": {
+            "text": "Math.random UUID collision fallback on browsers lacking crypto.randomUUID() support may cause two voters to generate the same UUID, denying one voter their rights.",
+            "markdown": "Replace the Math.random fallback with a cryptographically secure polyfill (crypto.getRandomValues()-based UUID generation); add browser capability detection and fail securely if no CSPRNG is available."
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "User Browser", "fullyQualifiedName": "Public Internet/User Browser", "kind": "external-entity" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "69675c639adc314d", "findingId/v1": "S-2" },
+          "properties": { "baselineState": "new", "maestro-layer": "L7 — Agent Ecosystem", "tags": ["security", "stride", "spoofing", "maestro-layer:L7"] }
+        },
+        {
+          "ruleId": "tachi/stride/spoofing",
+          "message": {
+            "text": "WAF managed rule bypass via payload encoding may allow an attacker exploiting rule engine edge cases to evade WAF inspection and reach the origin with malicious payloads.",
+            "markdown": "Enable AWS WAF full logging on critical rules; subscribe to AWS Managed Rules notifications; implement rate-based rules as defense-in-depth; periodically conduct WAF bypass penetration tests."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "WAFv2 WebACL", "fullyQualifiedName": "AWS Edge — PriceClass_100 (US + EU nodes only)/WAFv2 WebACL", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "55e9d7277ff50539", "findingId/v1": "S-3" },
+          "properties": { "baselineState": "new", "maestro-layer": "L6 — Security and Compliance", "tags": ["security", "stride", "spoofing", "maestro-layer:L6"] }
+        },
+        {
+          "ruleId": "tachi/stride/spoofing",
+          "message": {
+            "text": "Direct-to-origin bypass of CloudFront security controls may occur when an attacker discovers the API Gateway endpoint URL and sends requests directly, bypassing WAFv2, HSTS, CSP, and CDN-layer rate limiting.",
+            "markdown": "Implement API Gateway resource policy restricting invocations to CloudFront IP ranges or require a secret header set by CloudFront that Lambda validates; alternatively enforce mutual TLS between CloudFront and API Gateway."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "CloudFront Distribution", "fullyQualifiedName": "AWS Edge — PriceClass_100 (US + EU nodes only)/CloudFront Distribution", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "d3a3d91110256623", "findingId/v1": "S-4" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "spoofing", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/spoofing",
+          "message": {
+            "text": "API Gateway route exploitation via unexpected paths or HTTP methods may trigger undefined Lambda behavior or expose error details enabling further reconnaissance.",
+            "markdown": "Ensure all API Gateway routes explicitly return 404 for undefined paths; configure a catch-all route returning 403; review Lambda dispatcher for unexpected route error handling."
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "API Gateway v2 HTTP API", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/API Gateway v2 HTTP API", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "53c386c0bc0cb80d", "findingId/v1": "S-5" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "spoofing", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/spoofing",
+          "message": {
+            "text": "Sybil attack via programmatic UUID v4 generation may allow an attacker to register unlimited voter identities — each passing all validation checks — enabling systematic ballot-stuffing with no per-identity rate limit beyond WAF IP throttle.",
+            "markdown": "Implement WAF rate-based rule on POST /vote keyed to source IP (max N requests per 5-minute window); add WAF Bot Control managed rule set; consider CAPTCHA; implement server-side per-IP vote anomaly alerting; evaluate per-pollID vote caps."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "Go Lambda", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/Go Lambda", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "4565981c13b60e0f", "findingId/v1": "S-6" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "spoofing", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/tampering",
+          "message": {
+            "text": "WAF managed rule update regression may introduce false positives blocking legitimate traffic or new rule gaps failing to block recently-discovered attack patterns.",
+            "markdown": "Subscribe to AWS Security Bulletins and managed rule group changelogs; implement CloudWatch alarms on WAF block rate with anomaly detection; test rule updates in staging via WAF rule overrides."
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "WAFv2 WebACL", "fullyQualifiedName": "AWS Edge — PriceClass_100 (US + EU nodes only)/WAFv2 WebACL", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "0da6652188a41b71", "findingId/v1": "T-1" },
+          "properties": { "baselineState": "new", "maestro-layer": "L6 — Security and Compliance", "tags": ["security", "stride", "tampering", "maestro-layer:L6"] }
+        },
+        {
+          "ruleId": "tachi/stride/tampering",
+          "message": {
+            "text": "S3 static asset tampering via OAC policy drift may allow an attacker with write access (following bucket policy modification) to replace frontend assets with malicious content enabling mass voter UUID exfiltration.",
+            "markdown": "Enable AWS Config rule for S3 bucket policy changes; implement S3 Object Lock in governance mode; enable CloudTrail for S3 data events; use S3 versioning for rollback detection."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "CloudFront Distribution", "fullyQualifiedName": "AWS Edge — PriceClass_100 (US + EU nodes only)/CloudFront Distribution", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "f218bd8e8204ec18", "findingId/v1": "T-2" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "tampering", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/tampering",
+          "message": {
+            "text": "Frontend asset injection via compromised CI/CD credentials may allow an attacker to replace or inject malicious JavaScript into the S3 bucket, serving malicious code to all users loading the frontend.",
+            "markdown": "Rotate CI/CD IAM credentials regularly; use IAM roles with OIDC federation instead of long-lived keys; enable S3 MFA Delete; implement deployment pipeline approval gates; integrate S3 PutObject events into security alerting with hash verification."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "S3 Frontend Bucket", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/S3 Frontend Bucket", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "94968cd224bbf143", "findingId/v1": "T-3" },
+          "properties": { "baselineState": "new", "maestro-layer": "Unclassified", "tags": ["security", "stride", "tampering", "maestro-layer:Unclassified"] }
+        },
+        {
+          "ruleId": "tachi/stride/tampering",
+          "message": {
+            "text": "API Gateway throttle limit misconfiguration via Terraform drift may silently remove burst protection (50 burst/20 rps), exposing Lambda and DynamoDB to unbounded request rates.",
+            "markdown": "Implement Terraform state drift detection in CI/CD; use AWS Config custom rules to validate throttle settings; set CloudWatch alarms on API Gateway 429 response count baseline comparisons."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "API Gateway v2 HTTP API", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/API Gateway v2 HTTP API", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "dcdd8f8db1bb7d3a", "findingId/v1": "T-4" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "tampering", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/tampering",
+          "message": {
+            "text": "Systematic ballot-stuffing via concurrent multi-identity vote submission may allow an attacker automating POST /vote with distinct UUIDs to inflate vote counts for a preferred option — each request passes all validation and records a legitimate vote, enabling controlled poll result manipulation.",
+            "markdown": "Implement WAF rate-based rule on POST /vote keyed to source IP; add WAF Bot Control; evaluate CAPTCHA; implement server-side per-poll anomaly detection; consider requiring a signed challenge token for vote submission."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "Go Lambda", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/Go Lambda", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "8f6f632e56d3f3d0", "findingId/v1": "T-5" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "tampering", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/tampering",
+          "message": {
+            "text": "HMAC salt rotation may invalidate all existing VoterLog hashes, allowing all previously-voted users to vote again after the rotation because their new VoterHash will not be found in VoterLog.",
+            "markdown": "Implement explicit salt rotation policy prohibiting rotation during active polling; implement VoterLog hash migration for rotation events; add a salt version field to VoterHash; document rotation procedures in runbooks."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "Secrets Manager", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/Secrets Manager", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "b42d2635572f5a1b", "findingId/v1": "T-6" },
+          "properties": { "baselineState": "new", "maestro-layer": "L6 — Security and Compliance", "tags": ["security", "stride", "tampering", "maestro-layer:L6"] }
+        },
+        {
+          "ruleId": "tachi/stride/tampering",
+          "message": {
+            "text": "DynamoDB PollResults tampering via IAM privilege misuse may allow a compromised Lambda code path to perform UpdateItem with SET expressions rather than ADD, setting vote counters to arbitrary values.",
+            "markdown": "Implement DynamoDB condition expressions enforcing ADD-only semantics at the DynamoDB layer; audit Go dependencies; implement CloudTrail data event logging for PollResults; monitor IAM policy changes on Lambda role."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "PollResults", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/PollResults", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "925a57dd81581d1c", "findingId/v1": "T-7" },
+          "properties": { "baselineState": "new", "maestro-layer": "L2 — Data Operations", "tags": ["security", "stride", "tampering", "maestro-layer:L2"] }
+        },
+        {
+          "ruleId": "tachi/stride/tampering",
+          "message": {
+            "text": "VoterLog TTL manipulation via compromised Lambda code may emit incorrect ExpiresAt values causing dedup records to expire prematurely, allowing voters to re-vote before the intended 24-hour window.",
+            "markdown": "Add server-side validation enforcing ExpiresAt = current_time + 86400 with ±60s tolerance; implement CloudWatch metric filter on TTL values; add unit tests for ExpiresAt computation."
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "VoterLog", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/VoterLog", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "78b0a3a81630ea8c", "findingId/v1": "T-8" },
+          "properties": { "baselineState": "new", "maestro-layer": "L2 — Data Operations", "tags": ["security", "stride", "tampering", "maestro-layer:L2"] }
+        },
+        {
+          "ruleId": "tachi/stride/tampering",
+          "message": {
+            "text": "AuditLog write suppression via exception swallowing may cause votes to be recorded in PollResults without corresponding AuditLog entries, creating an undetectable SOC2 compliance gap when the Lambda exception handler swallows audit write failures.",
+            "markdown": "Treat AuditLog write failures as fatal (propagate error, return 500); implement secondary audit channel (CloudWatch Logs) as fallback; add CloudWatch metric filter alerting on votes without AuditLog events; test AuditLog failure mode in integration tests."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "AuditLog", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/AuditLog", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "5a75d121b47c7cb5", "findingId/v1": "T-9" },
+          "properties": { "baselineState": "new", "maestro-layer": "L5 — Evaluation and Observability", "tags": ["security", "stride", "tampering", "maestro-layer:L5"] }
+        },
+        {
+          "ruleId": "tachi/stride/repudiation",
+          "message": {
+            "text": "Voter may repudiate their vote claiming UUID theft from localStorage, and the system cannot definitively refute this claim because there is no cryptographic proof-of-possession for the UUID at the server.",
+            "markdown": "Document pseudonymisation design in privacy notices; consider server-signed challenge token for proof-of-interaction; maintain CloudFront access logs for circumstantial evidence."
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "User Browser", "fullyQualifiedName": "Public Internet/User Browser", "kind": "external-entity" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "d4a279b689fc1e20", "findingId/v1": "R-1" },
+          "properties": { "baselineState": "new", "maestro-layer": "L7 — Agent Ecosystem", "tags": ["security", "stride", "repudiation", "maestro-layer:L7"] }
+        },
+        {
+          "ruleId": "tachi/stride/repudiation",
+          "message": {
+            "text": "WAF sampling gaps may create forensic blind spots for attack reconstruction — attacks detected and blocked in sampled mode are not fully recorded, leaving gaps in the forensic timeline during incident investigations.",
+            "markdown": "Enable full WAF logging on all rules; configure WAF logging to S3 or Kinesis Data Firehose; implement log retention of 365 days; create CloudWatch dashboards for WAF block events; review WAF logging scope during SOC2 audits."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "WAFv2 WebACL", "fullyQualifiedName": "AWS Edge — PriceClass_100 (US + EU nodes only)/WAFv2 WebACL", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "b74126540eb985e0", "findingId/v1": "R-2" },
+          "properties": { "baselineState": "new", "maestro-layer": "L6 — Security and Compliance", "tags": ["security", "stride", "repudiation", "maestro-layer:L6"] }
+        },
+        {
+          "ruleId": "tachi/stride/repudiation",
+          "message": {
+            "text": "CloudFront access log asynchrony may create minor forensic gaps for cached responses, where log entry timing may be delayed or aggregated, creating minor gaps in the precise request timeline.",
+            "markdown": "Accept as residual risk; supplement with API Gateway access logs for API interactions; use CloudWatch Log Insights to join CloudFront and API Gateway logs on correlation IDs for incident investigation."
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "CloudFront Distribution", "fullyQualifiedName": "AWS Edge — PriceClass_100 (US + EU nodes only)/CloudFront Distribution", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "00113b73aa459bd1", "findingId/v1": "R-3" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "repudiation", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/repudiation",
+          "message": {
+            "text": "API Gateway access log field omission may weaken non-repudiation evidence if the log format does not include all required fields (requestTime, routeKey, httpMethod, sourceIp, requestId), limiting forensic attribution.",
+            "markdown": "Explicitly configure the API Gateway v2 access log format in Terraform to include all required fields; validate the log format in CI/CD; include the log format specification in the SOC2 evidence package."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "API Gateway v2 HTTP API", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/API Gateway v2 HTTP API", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "c7e44c0fd561ce48", "findingId/v1": "R-4" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "repudiation", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/repudiation",
+          "message": {
+            "text": "Lambda log stream fragmentation across concurrent instances may impede forensic transaction reconstruction when a consistent correlation ID is not propagated through all log entries for a single vote transaction.",
+            "markdown": "Inject API Gateway requestId as a structured log field in every Lambda log entry; implement structured JSON logging; use CloudWatch Log Insights with requestId-based queries; test log reconstruction in staging."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "Go Lambda", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/Go Lambda", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "2716b5e810fbf336", "findingId/v1": "R-5" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "repudiation", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/information-disclosure",
+          "message": {
+            "text": "WAF rule evaluation timing differences may provide an oracle enabling attackers to identify which payloads trigger which rules through response timing or error code variations, enabling adaptive attack refinement.",
+            "markdown": "Accept as residual risk; ensure error responses have consistent timing; align WAF block and origin error response status codes to reduce distinguishability."
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "WAFv2 WebACL", "fullyQualifiedName": "AWS Edge — PriceClass_100 (US + EU nodes only)/WAFv2 WebACL", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "b60d8f3a401f1ef6", "findingId/v1": "I-1" },
+          "properties": { "baselineState": "new", "maestro-layer": "L6 — Security and Compliance", "tags": ["security", "stride", "information-disclosure", "maestro-layer:L6"] }
+        },
+        {
+          "ruleId": "tachi/stride/information-disclosure",
+          "message": {
+            "text": "CloudFront error responses may expose backend infrastructure metadata including the API Gateway endpoint URL in redirect headers, S3 bucket ARN in Access Denied errors, or AWS region information in response headers.",
+            "markdown": "Configure custom CloudFront error pages for all 4xx and 5xx status codes; ensure the API Gateway URL is not embedded in frontend JavaScript; suppress AWS-default error page bodies; audit all response headers for infrastructure metadata leakage."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "CloudFront Distribution", "fullyQualifiedName": "AWS Edge — PriceClass_100 (US + EU nodes only)/CloudFront Distribution", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "cf47bf9bab7e2f15", "findingId/v1": "I-2" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "information-disclosure", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/information-disclosure",
+          "message": {
+            "text": "S3 audit bucket misconfiguration may expose CloudFront access logs containing traffic patterns, request URIs, edge node details, and timing data to unauthorized parties.",
+            "markdown": "Apply strict bucket policy on the S3 audit log bucket; enable S3 Block Public Access for the audit bucket; use S3 Object Lock in Compliance mode; restrict GetObject access to named audit IAM principals only."
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "S3 Frontend Bucket", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/S3 Frontend Bucket", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "24a8eb9da02bfe07", "findingId/v1": "I-3" },
+          "properties": { "baselineState": "new", "maestro-layer": "Unclassified", "tags": ["security", "stride", "information-disclosure", "maestro-layer:Unclassified"] }
+        },
+        {
+          "ruleId": "tachi/stride/information-disclosure",
+          "message": {
+            "text": "API Gateway access logs configured with request body logging may capture voter_id UUID in plaintext, breaking GDPR pseudonymisation — the raw UUID stored alongside IP and timestamp in 365-day retention logs enables voter tracking.",
+            "markdown": "Configure API Gateway v2 access log format to exclude request body content; review body logging settings; implement CloudWatch log group resource policy; use sampling with PII scrubbing if body logging is required for debugging."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "API Gateway v2 HTTP API", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/API Gateway v2 HTTP API", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "c31e518472c1d59b", "findingId/v1": "I-4" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "information-disclosure", "gdpr", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/information-disclosure",
+          "message": {
+            "text": "Lambda structured log over-logging by developer debug code may inadvertently expose raw voter UUIDs (pre-pseudonymisation), full VoterHashes, or internal DynamoDB error details containing table ARNs or IAM role information, persisting for 365 days in CloudWatch.",
+            "markdown": "Implement structured logging library enforcing PII field filtering; establish code review checklist for log statements; implement log scanning in CI/CD; restrict CloudWatch log group access."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "Go Lambda", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/Go Lambda", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "9b1771e2bbbfd34a", "findingId/v1": "I-5" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "information-disclosure", "gdpr", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/information-disclosure",
+          "message": {
+            "text": "HMAC salt exposure via Lambda memory inspection or debug code path may enable offline pre-computation of all VoterHash values, breaking GDPR pseudonymisation for all voters permanently.",
+            "markdown": "Never store salt in environment variables; disable debug endpoints in production builds; implement CloudTrail alerting on anomalous Secrets Manager GetSecretValue; document salt rotation migration path."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "Secrets Manager", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/Secrets Manager", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "bcbac21c17e09c45", "findingId/v1": "I-6" },
+          "properties": { "baselineState": "new", "maestro-layer": "L6 — Security and Compliance", "tags": ["security", "stride", "information-disclosure", "gdpr", "maestro-layer:L6"] }
+        },
+        {
+          "ruleId": "tachi/stride/information-disclosure",
+          "message": {
+            "text": "Real-time vote trend disclosure via continuous GET /results polling may reveal voter preference accumulation in real-time, enabling early trend disclosure that could influence subsequent voters.",
+            "markdown": "Implement result visibility gating (minimum vote threshold or time-gate); add CloudFront caching for GET /results with short TTL; implement WAF rate limiting on GET /results to prevent automated polling."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "PollResults", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/PollResults", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "211ec585e6f15ab1", "findingId/v1": "I-7" },
+          "properties": { "baselineState": "new", "maestro-layer": "L2 — Data Operations", "tags": ["security", "stride", "information-disclosure", "maestro-layer:L2"] }
+        },
+        {
+          "ruleId": "tachi/stride/information-disclosure",
+          "message": {
+            "text": "VoterLog hash enumeration may enable voter participation status disclosure when an attacker who obtains the HMAC salt and VoterLog read access can compute VoterHash for any target UUID and determine whether a specific voter has participated.",
+            "markdown": "Ensure VoterLog IAM access is restricted to Lambda execution role only; implement salt compromise detection via CloudTrail alerting; document VoterLog invalidation procedure for salt compromise events."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "VoterLog", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/VoterLog", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "1593bc5bd3d758e8", "findingId/v1": "I-8" },
+          "properties": { "baselineState": "new", "maestro-layer": "L2 — Data Operations", "tags": ["security", "stride", "information-disclosure", "gdpr", "maestro-layer:L2"] }
+        },
+        {
+          "ruleId": "tachi/stride/information-disclosure",
+          "message": {
+            "text": "AuditLog ActorID partial hash (VoterHash[:8]) shared across all audit events for the same voter may enable participation timeline reconstruction by correlating entries with matching ActorID values, representing a GDPR information disclosure risk.",
+            "markdown": "Evaluate replacing ActorID with a second-level hash using a separate audit-log-specific salt; restrict AuditLog read access to compliance/audit IAM roles only; include AuditLog access in SOC2 logical access reviews."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "AuditLog", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/AuditLog", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "a42a71943fc89af5", "findingId/v1": "I-9" },
+          "properties": { "baselineState": "new", "maestro-layer": "L5 — Evaluation and Observability", "tags": ["security", "stride", "information-disclosure", "gdpr", "maestro-layer:L5"] }
+        },
+        {
+          "ruleId": "tachi/stride/denial-of-service",
+          "message": {
+            "text": "WAF rule evaluation computational overhead via complex payload crafting may cause latency increases without triggering blocks, degrading throughput for legitimate users.",
+            "markdown": "Enable WAF rate-based rules to constrain volume of complex evaluation attempts; configure CloudFront minimum TTL for error responses to prevent amplification."
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "WAFv2 WebACL", "fullyQualifiedName": "AWS Edge — PriceClass_100 (US + EU nodes only)/WAFv2 WebACL", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "e59cff3d545aa1bf", "findingId/v1": "D-1" },
+          "properties": { "baselineState": "new", "maestro-layer": "L6 — Security and Compliance", "tags": ["security", "stride", "denial-of-service", "maestro-layer:L6"] }
+        },
+        {
+          "ruleId": "tachi/stride/denial-of-service",
+          "message": {
+            "text": "Cache poisoning denial of service may occur when an attacker crafts requests with unusual cache-differentiating headers, forcing CloudFront to cache many distinct responses for the same URL and serving degraded responses until TTL expiry.",
+            "markdown": "Configure CloudFront cache policies with minimal allowed cache-key headers; disable forwarding of unnecessary headers to origin; monitor cache hit rate for sudden drops indicating potential cache poisoning."
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "CloudFront Distribution", "fullyQualifiedName": "AWS Edge — PriceClass_100 (US + EU nodes only)/CloudFront Distribution", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "cfc29d62731fb3c2", "findingId/v1": "D-2" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "denial-of-service", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/denial-of-service",
+          "message": {
+            "text": "S3 request rate throttling under sustained DDoS passing edge caches may cause S3 to return 503 SlowDown responses when origin requests exceed per-prefix rate limits, degrading frontend delivery.",
+            "markdown": "CloudFront caching significantly reduces origin requests; implement S3 Transfer Acceleration; enable CloudFront request rate monitoring; S3 auto-scales for sustained traffic patterns."
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "S3 Frontend Bucket", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/S3 Frontend Bucket", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "874ab20ed3c50155", "findingId/v1": "D-3" },
+          "properties": { "baselineState": "new", "maestro-layer": "Unclassified", "tags": ["security", "stride", "denial-of-service", "maestro-layer:Unclassified"] }
+        },
+        {
+          "ruleId": "tachi/stride/denial-of-service",
+          "message": {
+            "text": "API Gateway burst limit exhaustion via distributed requests from non-blacklisted IPs may allow a botnet using fresh compromised IPs to collectively exhaust the 50-request burst and 20 rps sustained limit, causing all legitimate voters to receive 429 responses.",
+            "markdown": "Enable WAF Bot Control managed rule set; implement WAF rate-based rule with per-IP vote-submission limit; implement DDoS escalation runbook for API Gateway 429 surge events; consider AWS Shield Advanced."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "API Gateway v2 HTTP API", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/API Gateway v2 HTTP API", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "0a9a4b20d4869c9e", "findingId/v1": "D-4" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "denial-of-service", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/denial-of-service",
+          "message": {
+            "text": "Lambda cold-start storm may exhaust Secrets Manager capacity during sudden traffic spikes when many simultaneous cold-starts each call GetSecretValue, potentially causing initialization failures or latency spikes.",
+            "markdown": "Enable Lambda provisioned concurrency for base warm instances; memory caching of salt already minimizes Secrets Manager calls; implement CloudWatch alarm on Secrets Manager ThrottleCount metric."
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "Go Lambda", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/Go Lambda", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "fa5a4a30a291ff37", "findingId/v1": "D-5" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "denial-of-service", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/denial-of-service",
+          "message": {
+            "text": "Secrets Manager GetSecretValue throttling during Lambda scaling events may block Lambda initialization, creating a dependency chain DoS where high traffic triggers Lambda scaling which exhausts Secrets Manager quota, halting vote processing.",
+            "markdown": "Configure Lambda reserved_concurrent_executions; implement Lambda provisioned concurrency; add exponential backoff with jitter in GetSecretValue calls; implement Secrets Manager ThrottleCount CloudWatch alarm."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "Secrets Manager", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/Secrets Manager", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "898ae381704dee78", "findingId/v1": "D-6" },
+          "properties": { "baselineState": "new", "maestro-layer": "L6 — Security and Compliance", "tags": ["security", "stride", "denial-of-service", "maestro-layer:L6"] }
+        },
+        {
+          "ruleId": "tachi/stride/denial-of-service",
+          "message": {
+            "text": "DynamoDB PollResults write capacity exhaustion via vote flooding may cause TransactWriteItems to fail with ProvisionedThroughputExceededException when sustained high-volume concurrent POST /vote requests exhaust provisioned WCU.",
+            "markdown": "Enable DynamoDB on-demand capacity mode for PollResults; configure CloudWatch alarm on ConsumedWriteCapacityUnits approaching table limits; apply WAF rate-based rules on POST /vote."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "PollResults", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/PollResults", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "6c0b5fa7fe91400a", "findingId/v1": "D-7" },
+          "properties": { "baselineState": "new", "maestro-layer": "L2 — Data Operations", "tags": ["security", "stride", "denial-of-service", "maestro-layer:L2"] }
+        },
+        {
+          "ruleId": "tachi/stride/denial-of-service",
+          "message": {
+            "text": "VoterLog write saturation via unique-UUID flooding may exhaust VoterLog write capacity when each fresh UUID vote attempt results in a VoterLog PutItem, aborting the TransactWriteItems and preventing all vote recording.",
+            "markdown": "Enable DynamoDB on-demand capacity mode for VoterLog; implement WAF rate-based rules; configure CloudWatch alarm on VoterLog ConsumedWriteCapacityUnits; implement Lambda circuit breaker for sustained DynamoDB write failures."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "VoterLog", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/VoterLog", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "264e55c725606681", "findingId/v1": "D-8" },
+          "properties": { "baselineState": "new", "maestro-layer": "L2 — Data Operations", "tags": ["security", "stride", "denial-of-service", "maestro-layer:L2"] }
+        },
+        {
+          "ruleId": "tachi/stride/denial-of-service",
+          "message": {
+            "text": "AuditLog write failure may cascade to either complete vote processing failure (if treated as fatal) or SOC2 compliance breach (if swallowed), creating a critical operational risk regardless of the error handling policy chosen.",
+            "markdown": "Define explicit error handling policy (fatal on AuditLog failure); implement DynamoDB on-demand capacity for AuditLog; configure secondary CloudWatch Logs audit channel as fallback; set CloudWatch alarm on AuditLog write failure rate."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "AuditLog", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/AuditLog", "kind": "data-store" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "dd364b2cba9c63d0", "findingId/v1": "D-9" },
+          "properties": { "baselineState": "new", "maestro-layer": "L5 — Evaluation and Observability", "tags": ["security", "stride", "denial-of-service", "maestro-layer:L5"] }
+        },
+        {
+          "ruleId": "tachi/stride/elevation-of-privilege",
+          "message": {
+            "text": "WAF SSRF rule gap may enable Lambda to make outbound requests to internal AWS endpoints if KnownBadInputsRuleSet does not cover current SSRF bypass techniques, potentially enabling temporary IAM credential exfiltration.",
+            "markdown": "Verify Lambda IMDS access isolation; enforce IMDSv2 if Lambda operates in VPC context; monitor KnownBadInputsRuleSet coverage for new SSRF bypass techniques; add Lambda network egress controls restricting outbound connections."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "WAFv2 WebACL", "fullyQualifiedName": "AWS Edge — PriceClass_100 (US + EU nodes only)/WAFv2 WebACL", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "5c0af7a5395c226d", "findingId/v1": "E-1" },
+          "properties": { "baselineState": "new", "maestro-layer": "L6 — Security and Compliance", "tags": ["security", "stride", "elevation-of-privilege", "maestro-layer:L6"] }
+        },
+        {
+          "ruleId": "tachi/stride/elevation-of-privilege",
+          "message": {
+            "text": "CloudFront OAC confused-deputy attack may occur if another CloudFront distribution is inadvertently configured to use the same S3 bucket as origin, potentially bypassing intended access controls.",
+            "markdown": "Verify S3 bucket policy uses aws:SourceArn with exact CloudFront ARN; run periodic Terraform plan checks for bucket policy drift; use AWS Config for S3 GetObject grant monitoring; verify OAC condition with IAM Policy Simulator."
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "CloudFront Distribution", "fullyQualifiedName": "AWS Edge — PriceClass_100 (US + EU nodes only)/CloudFront Distribution", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "2700a437c89368cb", "findingId/v1": "E-2" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "elevation-of-privilege", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/elevation-of-privilege",
+          "message": {
+            "text": "Unauthorized route addition via Terraform drift or developer error may create Lambda endpoints accessible without authorization, since API Gateway v2 HTTP APIs do not enforce route-level authorization by default.",
+            "markdown": "Implement Terraform change approval for API Gateway route modifications; add automated test asserting exact expected route set; implement Lambda authorizer as default deny layer; use AWS Config for route change detection."
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "API Gateway v2 HTTP API", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/API Gateway v2 HTTP API", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "9863ec774266c362", "findingId/v1": "E-3" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "elevation-of-privilege", "maestro-layer:L4"] }
+        },
+        {
+          "ruleId": "tachi/stride/elevation-of-privilege",
+          "message": {
+            "text": "Sybil privilege elevation may allow an attacker generating unlimited UUID v4 values to accumulate enough votes to determine poll outcomes — a capability far beyond that of any legitimate single voter — exploiting the absence of per-IP vote rate limits and Sybil resistance.",
+            "markdown": "Implement IP-keyed rate limiting at WAF (max N POST /vote per IP per window); add WAF Bot Control; evaluate per-pollID vote velocity anomaly detection; implement CAPTCHA; add server-side Sybil detection heuristics (alert when single IP contributes >X% of total votes)."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": { "artifactLocation": { "uri": "docs/security/architecture.md" }, "region": { "startLine": 1 } },
+              "logicalLocations": [{ "name": "Go Lambda", "fullyQualifiedName": "AWS Cloud — eu-central-1 (GDPR data residency)/Go Lambda", "kind": "process" }]
+            }
+          ],
+          "partialFingerprints": { "primaryLocationLineHash": "4029e12aab8860c7", "findingId/v1": "E-4" },
+          "properties": { "baselineState": "new", "maestro-layer": "L4 — Deployment Infrastructure", "tags": ["security", "stride", "elevation-of-privilege", "maestro-layer:L4"] }
+        }
+      ]
+    }
+  ]
+}
