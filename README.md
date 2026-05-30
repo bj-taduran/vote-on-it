@@ -16,6 +16,7 @@ A serverless, single-question polling application built on AWS. Users land on a 
 - [Security & Compliance](#security--compliance)
   - [SOC2 Controls](#soc2-controls)
   - [GDPR Controls](#gdpr-controls)
+- [Threat Modeling](#threat-modeling)
 - [Security Guardrails & CI Checks](#security-guardrails--ci-checks)
   - [Pre-Merge Scanner Tuning](#pre-merge-scanner-tuning)
 - [Infrastructure Overview](#infrastructure-overview)
@@ -120,10 +121,21 @@ vote-on-it/
 │   ├── go.mod
 │   ├── go.sum
 │   └── dist/                        ← Build output — git-ignored (bootstrap, function.zip)
-└── frontend/                        ← Static assets
-    ├── index.html                   ← Shell with deploy-time API config block
-    ├── style.css                    ← CSS bar chart + responsive layout
-    └── app.js                       ← UUID generation, vote POST, results rendering
+├── frontend/                        ← Static assets
+│   ├── index.html                   ← Shell with deploy-time API config block
+│   ├── style.css                    ← CSS bar chart + responsive layout
+│   └── app.js                       ← UUID generation, vote POST, results rendering
+├── docs/
+│   ├── security/
+│   │   ├── architecture.md          ← Mermaid DFD + STRIDE table (tachi input)
+│   │   └── 2026-05-30T07-18-09/    ← First tachi run: threats.md, SARIF, report, attack-trees/
+│   ├── guides/
+│   │   └── DEVELOPER_GUIDE_TACHI.md ← tachi developer reference
+│   └── claude/                      ← Claude Code satellite context files (progressive disclosure)
+│       ├── compliance.md            ← DynamoDB schema, SOC2/GDPR detail, input validation
+│       ├── infrastructure.md        ← Terraform map, IAM policies, deploy sequence
+│       └── threat-model.md          ← Threat model artifacts, finding summary, re-run guide
+└── .claude/                         ← Claude Code config — tachi agents, commands, skills
 ```
 
 ---
@@ -313,6 +325,50 @@ This project is designed to meet SOC2 Type II and GDPR requirements. Every const
 | **Art. 32 — Security of processing** | All data at rest is encrypted (CMK for DynamoDB, Secrets Manager, Lambda env vars; AES-256 for S3). All data in transit uses TLS enforced at CloudFront and S3. WAF provides perimeter protection at the CloudFront edge. API Gateway throttling limits burst traffic. |
 | **Data residency** | `var.aws_region` is validated in `variables.tf` to accept only `eu-*` regions — deployments to non-EU regions are blocked at `terraform plan` time. CloudFront is configured with `PriceClass_100` (US + EU edge locations), which limits edge processing to US and EU nodes while keeping all data storage in the configured EU region. |
 | **No PII in logs** | CloudWatch log formats in `api_gateway.tf` explicitly omit `$context.identity.sourceIp`. Lambda structured logs use only `VoterHash[:8]` as the actor identifier. No raw UUID, no IP, and no device information appears in any log group. |
+
+---
+
+## Threat Modeling
+
+Security threat analysis is performed using [tachi](https://github.com/davidmatousek/tachi),
+a STRIDE-based threat modeling pipeline for Claude Code. The tachi agents, slash commands,
+and skill reference files are committed to `.claude/` — any team member with Claude Code
+can run the full pipeline without any additional installation.
+
+### Running a new threat model
+
+```
+/tachi.threat-model
+```
+
+Uses `docs/security/architecture.md` as input. Auto-detects the previous run as a
+baseline and produces a delta summary. Outputs land in a new timestamped subfolder
+under `docs/security/`:
+
+| File | Contents |
+|---|---|
+| `threats.md` | Structured findings across 6 STRIDE categories + coverage matrix |
+| `threats.sarif` | SARIF 2.1.0 — upload to GitHub Code Scanning |
+| `threat-report.md` | Narrative report with executive summary and remediation roadmap |
+| `attack-trees/` | Mermaid attack tree per Critical/High finding |
+
+The full pipeline also includes `/tachi.risk-score` (CVSS scoring),
+`/tachi.compensating-controls` (control mapping), and `/tachi.security-report` (PDF assembly).
+
+### Current threat model
+
+Latest run: [`docs/security/2026-05-30T07-18-09/`](docs/security/2026-05-30T07-18-09/)
+
+| Severity | Count |
+|---|---|
+| Critical | 3 |
+| High | 8 |
+| Medium | 18 |
+| Low | 9 |
+
+The three Critical findings share the same root cause (Sybil resistance gap). See
+[`docs/security/2026-05-30T07-18-09/threat-report.md`](docs/security/2026-05-30T07-18-09/threat-report.md)
+for the full remediation roadmap.
 
 ---
 
